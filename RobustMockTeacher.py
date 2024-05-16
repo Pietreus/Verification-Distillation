@@ -24,11 +24,12 @@ class MockNeuralNetwork(tf.keras.Model):
         # Random constant projection vector
         #self.projection_vector = tf.constant(np.random.randn(num_dim, 1), dtype=tf.float32)
         # with this calculating robustness is not easy, the below projection is easy
-        self.projection_vector = tf.constant(np.ones((num_dim, 1)), dtype=tf.float64)
+        self.projection_vector = tf.constant(np.ones((num_dim, 1)), dtype=tf.float32)
 
     def forward(self, inputs):
         # Project input onto the random projection vector
-        projected_input = tf.matmul(inputs, self.projection_vector)
+        # print(np.shape(inputs))
+        projected_input = tf.matmul(tf.cast(inputs, dtype=tf.float32), self.projection_vector)
         # print(projected_input)
         # Apply sawtooth function
         return sawtooth_wave(projected_input, self.frequency)
@@ -73,7 +74,7 @@ if __name__ == "__main__":
 
     # print(teacher.robustness(0.1))
     # Example usage:
-    x = tf.cast(tf.linspace(0.0, 1.0, 1001),dtype=tf.float64)
+    x = tf.cast(tf.linspace(0.0, 1.0, 1001),dtype=tf.float32)
     x_expanded = tf.expand_dims(x, axis=1)
     x_5dim = tf.tile(x_expanded, [1, 5])
     y = sawtooth_wave(x, 1)
@@ -96,8 +97,8 @@ if __name__ == "__main__":
 
     t = 0.2
 
-    random_matrix = tf.random.uniform(shape=(10**6, 5), minval=-5, maxval=5,dtype=tf.float64)
+    random_matrix = tf.random.uniform(shape=(10**6, 5), minval=-5, maxval=5,dtype=tf.float32)
     ## the two lines below should return approx the same for all combinations of freq and t
     ## if the analytic method is not applicable, the line below with simulation can be employed regardless :)
-    print(tf.math.reduce_mean(tf.cast(tf.math.abs(teacher.forward(random_matrix)) > 4*freq*t, dtype=tf.float64)))
+    print(tf.math.reduce_mean(tf.cast(tf.math.abs(teacher.forward(random_matrix)) > 4*freq*t, dtype=tf.float32)))
     print(teacher.robustness(t))

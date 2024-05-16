@@ -5,11 +5,11 @@ from scipy.spatial import KDTree
 
 def chernoff_guarantee_eps(x, eta_error_probability):
     """
-    Returns the epsilon error for the coverage estimate, given a dataset, a delta and a error probability
+    Returns the epsilon error for the coverage estimate, given a dataset, a delta and an error probability
     :param x: dataset
     :param delta_radius: robustness radius of coverage
     :param eta_error_probability: allowed probability that the given bound does not hold
-    :return: the chernoff bound for parameter estimation reexpressed for eps
+    :return: the chernoff bound for parameter estimation re-expressed for eps
     """
     n = tf.shape(x)[0]
     eps = np.sqrt(3/n * np.log(2/eta_error_probability))
@@ -29,7 +29,7 @@ class CoverageChecker:
         return dist
 
     def getCoverage(self, x, delta_radius, p=np.inf):
-        return np.mean(self.query(x, delta_radius,p) < np.inf)
+        return np.mean(self.query(x, delta_radius, p) < np.inf)
 
 
 if __name__ == "__main__":
