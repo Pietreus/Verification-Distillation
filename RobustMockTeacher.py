@@ -1,14 +1,34 @@
 import torch
 import numpy as np
+from torch.autograd import Function
 
 
-def sawtooth_wave(x, frequency):
-    slope = 4  # cover a distance of -1 to 1 in time frequency/2
-    x_scaled = torch.remainder(x * frequency, 0.5)  # cut up x and rescale so it goes from 0 to 1
-    # print(x_scaled)
-    x_sign = torch.sign(torch.remainder(x * frequency, 1) - x_scaled - 10 ** -10)
-    #
-    return x_sign - slope * x_scaled * x_sign
+class Sawtooth_wave(torch.autograd.Function):
+
+    @staticmethod
+    def forward(ctx, input, frequency = 1):
+        slope = 4  # cover a distance of -1 to 1 in time frequency/2
+        x_scaled = torch.remainder(input * frequency, 0.5)  # cut up x and rescale so it goes from 0 to 1
+        # print(x_scaled)
+        x_sign = torch.sign(torch.remainder(input * frequency, 1) - x_scaled - 10 ** -10)
+        ctx.save_for_backward(x_sign)
+
+        #
+        return x_sign - slope * x_scaled * x_sign
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        x_sign, = ctx.saved_tensors
+        grad_input = -4 * x_sign * grad_output
+        return grad_input, None
+
+# def sawtooth_wave(x, frequency):
+#     slope = 4  # cover a distance of -1 to 1 in time frequency/2
+#     x_scaled = torch.remainder(x * frequency, 0.5)  # cut up x and rescale so it goes from 0 to 1
+#     print(x_scaled)
+    # x_sign = torch.sign(torch.remainder(x * frequency, 1) - x_scaled - 10 ** -10)
+
+    # return x_sign - slope * x_scaled * x_sign
 
 
 class MockNeuralNetwork(torch.nn.Module):
@@ -17,31 +37,34 @@ class MockNeuralNetwork(torch.nn.Module):
         self.seed = seed
         self.num_dim = num_dim
         self.frequency = frequency
+        self.sawtooth = Sawtooth_wave()
 
         # Set random seed
         np.random.seed(seed)
 
         # Random constant projection vector
-        # self.projection_vector = tf.constant(np.random.randn(num_dim, 1), dtype=tf.float32)
         # with this calculating robustness is not easy, the below projection is easy
-        self.projection_vector = torch.ones((num_dim, 1))
+        self.projection_vector = torch.ones((num_dim, 1), dtype=torch.float, requires_grad=True)
 
     def raw_output(self, x):
         # Project input onto the random projection vector
-        # print(np.shape(inputs))
-        # projected_input = tf.matmul(tf.cast(x, dtype=tf.float32), self.projection_vector)
         projected_input = torch.matmul(x, self.projection_vector)
-        # print(projected_input)
         # Apply sawtooth function
-        return sawtooth_wave(projected_input, self.frequency)
+        return Sawtooth_wave().apply(projected_input, self.frequency)
 
     def forward(self, inputs):
-        output = self.raw_output(inputs)
-        # Threshold for binary classification
-        # output_binary = tf.cast(output > 0.5, dtype=tf.float32)
-        output_binary = output > 0.5
-        return output_binary
 
+        output = self.raw_output(inputs)
+
+        # # Threshold for binary classification
+        # output_binary = (output > 0.5)
+        # # print(output_binary.view(-1).long())
+        # output_two_call = torch.eye(2)[output_binary.view(-1).long()]
+        # return output_two_call
+        return torch.cat((output, -output), dim=1)
+
+    def backward(self, grad_outputs):
+        return Sawtooth_wave.backward(grad_outputs)
 
     def robustness(self, threshold):
         """
@@ -54,6 +77,9 @@ class MockNeuralNetwork(torch.nn.Module):
         # there are 4 regions of size `threshold` per period
         return self.frequency * max(1 / self.frequency - 4 * threshold, 0)
 
+    def parameters(self, recurse: bool = True):
+        return []
+
 
 if __name__ == "__main__":
     freq = 1
@@ -62,16 +88,10 @@ if __name__ == "__main__":
 
     # print(teacher.robustness(0.1))
     # Example usage:
-    # x = tf.cast(tf.linspace(0.0, 1.0, 1001), dtype=tf.float32)
     x = torch.linspace(0,1,1001)
     x_matrix = x.repeat(dim, 1).t()
-    # x_expanded = tf.expand_dims(x, axis=1)
-    # x_expanded = torch.unsqueeze(x,1)
-    # x_5dim = tf.tile(x_expanded, [1, 5])
-    # x_5dim = x
-    y = sawtooth_wave(x, 1)
+    y = Sawtooth_wave().apply(x, 1)
 
-    # print(x_5dim)
     import matplotlib.pyplot as plt
 
     plt.plot(x, teacher.raw_output(x_matrix))
@@ -99,3 +119,4 @@ if __name__ == "__main__":
                 torch.abs(teacher.raw_output(random_matrix)) > 4 * freq * t
         ).float()))
     print(teacher.robustness(t))
+
