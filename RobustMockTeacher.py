@@ -66,7 +66,7 @@ class MockNeuralNetwork(torch.nn.Module):
     def backward(self, grad_outputs):
         return Sawtooth_wave.backward(grad_outputs)
 
-    def robustness(self, threshold):
+    def theoretical_robustness(self, threshold):
         """
         returns the fraction of points with a given threshold of robustness.
         Eg for a threshold of 0.5, returns the fraction of points which are more than 0.5 away
@@ -76,6 +76,15 @@ class MockNeuralNetwork(torch.nn.Module):
 
         # there are 4 regions of size `threshold` per period
         return self.frequency * max(1 / self.frequency - 4 * threshold, 0)
+
+    def data_robustness(self, data_matrix: torch.Tensor, threshold: float):
+        """
+
+        :param data_matrix: the data against which the robustness should be tested
+        :param threshold: which robustness radius should be checked
+        :return: a fraction of points which are threshold-robust
+        """
+        return torch.mean((torch.abs(self.raw_output(data_matrix)) > 4 * self.frequency * threshold).float())
 
     def parameters(self, recurse: bool = True):
         return []
@@ -118,5 +127,5 @@ if __name__ == "__main__":
         (
                 torch.abs(teacher.raw_output(random_matrix)) > 4 * freq * t
         ).float()))
-    print(teacher.robustness(t))
+    print(teacher.theoretical_robustness(t))
 

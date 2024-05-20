@@ -1,6 +1,9 @@
+import io
+
 import numpy as np
 # import tensorflow as tf
 import torch
+from PIL import Image
 from matplotlib import pyplot as plt
 from torch import optim
 from torch.utils.data import DataLoader
@@ -29,7 +32,7 @@ def LGAD(x, y_true, y_pred_S, y_pred_T, lambda_CE=1.0, lambda_KL=3.0, lambda_GAD
     return lambda_CE * CE_loss + lambda_KL * KL_loss + lambda_GAD * grad_discrepancy, CE_loss, KL_loss, grad_discrepancy
 
 
-def plot_networks(teacher_model, student_model, synthetic_data, synthetic_labels):
+def plot_networks(teacher_model, student_model, synthetic_data, synthetic_labels, save=True, show=True):
     # Ensure the models are in evaluation mode
     teacher_model.eval()
     student_model.eval()
@@ -72,7 +75,19 @@ def plot_networks(teacher_model, student_model, synthetic_data, synthetic_labels
 
     # Adjust layout
     plt.tight_layout()
-    plt.show()
+    if show:
+        plt.show()
+    if save:
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        plt.close(fig)
+
+        # Convert buffer to an image and log to TensorBoard
+        image = Image.open(buf)
+        image = torch.tensor(np.array(image)).permute(2, 0, 1)  # Convert to CHW format
+        writer.add_image('Model Outputs', image, 0)
+
 
 
 def knowledge_distillation(distillation_data, teacher_model, student_model, batch_size, epochs, print_functions=False):

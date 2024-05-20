@@ -26,11 +26,16 @@ if __name__ == "__main__":
     torch.manual_seed(42)
     np.random.seed(42)
     dim = 2
-    student = StudentModel(dim)
-    mock_teacher = MockNeuralNetwork(dim, 0.5)
-    # Generate synthetic data using normal distribution
-    synthetic_data = torch.tensor(np.random.uniform(-2, 2, size=(10 ** 5, *(dim,))), dtype=torch.float32)
+    delta_radius = 0.05
+    for frequency in np.linspace(0.06, 0.56, 26):
+        student = StudentModel(dim)
+        mock_teacher = MockNeuralNetwork(dim, frequency)
+        # Generate synthetic data using normal distribution
+        synthetic_data = torch.tensor(np.random.uniform(-2, 2, size=(10 ** 5, *(dim,))), dtype=torch.float32)
+        print(f"teacher frequency: {frequency}  "
+              f"teacher {delta_radius}-robustness: {mock_teacher.data_robustness(synthetic_data, delta_radius):0.3f}")
 
-    knowledge_distillation(synthetic_data, mock_teacher, student, 1000, 500, True)
-
-
+        knowledge_distillation(synthetic_data, mock_teacher, student, 1000, 1, True)
+        torch.onnx.export(student, args=(synthetic_data[1]),
+                          f=f"models/dim_{dim}_delta_{delta_radius}_frequency_{frequency}.onnx")
+        torch.save(student.state_dict(), f"models/dim_{dim}_delta_{delta_radius}_frequency_{frequency}.pt")
