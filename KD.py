@@ -12,7 +12,7 @@ from RobustMockTeacher import MockNeuralNetwork
 from torch.utils.tensorboard import SummaryWriter
 writer = SummaryWriter()
 
-def LGAD(x, y_true, y_pred_S, y_pred_T, lambda_CE=1.0, lambda_KL=1.0, lambda_GAD=1.0,
+def LGAD(x, y_true, y_pred_S, y_pred_T, lambda_CE=1.0, lambda_KL=3.0, lambda_GAD=5.0,
          temperature=1.0):
     LCE = torch.nn.CrossEntropyLoss()
     LKL = torch.nn.KLDivLoss(log_target=True)
@@ -104,9 +104,9 @@ def knowledge_distillation(teacher_model, student_model, num_samples, input_shap
             outputs = student_model(inputs)
             teacher_outputs = teacher_model(inputs)
             # Set requires_grad=True on inputs to enable gradient computation
-
+#np.exp(-epoch / 100)
             # Compute your custom loss
-            loss, ce, kl, gad = LGAD(inputs, targets, outputs, teacher_outputs, temperature=np.exp(-epoch / 20))
+            loss, ce, kl, gad = LGAD(inputs, targets, outputs, teacher_outputs, temperature=1)
             writer.add_scalar('Loss/Cross_Entropy', ce.item(), epoch * len(train_loader) + batch_idx)
             writer.add_scalar('Loss/KL_Divergence', kl.item(), epoch * len(train_loader) + batch_idx)
             writer.add_scalar('Loss/GradientDisparity', gad.item(), epoch * len(train_loader) + batch_idx)
