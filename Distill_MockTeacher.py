@@ -28,4 +28,9 @@ if __name__ == "__main__":
     dim = 2
     student = StudentModel(dim)
     mock_teacher = MockNeuralNetwork(dim, 0.5)
-    knowledge_distillation(mock_teacher, student, 10 ** 5, (dim,), 1000, 500, True)
+    # Generate synthetic data using normal distribution
+    synthetic_data = torch.tensor(np.random.uniform(-2, 2, size=(10 ** 5, *(dim,))), dtype=torch.float32)
+
+    knowledge_distillation(synthetic_data, mock_teacher, student, 1000, 500, True)
+
+

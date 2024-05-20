@@ -75,13 +75,11 @@ def plot_networks(teacher_model, student_model, synthetic_data, synthetic_labels
     plt.show()
 
 
-def knowledge_distillation(teacher_model, student_model, num_samples, input_shape, batch_size, epochs, print_functions=False):
+def knowledge_distillation(distillation_data, teacher_model, student_model, batch_size, epochs, print_functions=False):
 
-    # Generate synthetic data using normal distribution
-    synthetic_data = torch.tensor(np.random.uniform(-2,2,size=(num_samples, *input_shape)), dtype=torch.float32)
 
     # Get teacher predictions for synthetic data
-    teacher_predictions = teacher_model(synthetic_data)
+    teacher_predictions = teacher_model(distillation_data)
 
     # Convert teacher predictions to labels
     synthetic_labels = torch.eye(2)[torch.argmax(teacher_predictions, dim=1)]
@@ -89,7 +87,7 @@ def knowledge_distillation(teacher_model, student_model, num_samples, input_shap
     # Train student model using synthetic data and teacher predictions
     optimizer = optim.Adam(student_model.parameters(), lr=0.0005)
 
-    dataset = SyntheticDataset(synthetic_data, synthetic_labels)
+    dataset = SyntheticDataset(distillation_data, synthetic_labels)
 
     # Create DataLoader
     for epoch in tqdm(range(epochs)):
@@ -117,7 +115,7 @@ def knowledge_distillation(teacher_model, student_model, num_samples, input_shap
     writer.flush()
     writer.close()
     if print_functions:
-        plot_networks(teacher_model,student_model,synthetic_data,synthetic_labels)
+        plot_networks(teacher_model,student_model,distillation_data,synthetic_labels)
 
 
 if __name__ == "__main__":
