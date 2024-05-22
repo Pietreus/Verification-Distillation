@@ -15,7 +15,7 @@ from RobustMockTeacher import MockNeuralNetwork
 from torch.utils.tensorboard import SummaryWriter
 writer = SummaryWriter()
 
-def LGAD(x, y_true, y_pred_S, y_pred_T, lambda_CE=1.0, lambda_KL=3.0, lambda_GAD=5.0,
+def LGAD(x, y_true, y_pred_S, y_pred_T, lambda_CE=1.0, lambda_KL=3.0, lambda_GAD=200.0,
          temperature=1.0):
     LCE = torch.nn.CrossEntropyLoss()
     LKL = torch.nn.KLDivLoss(log_target=True)
@@ -23,10 +23,13 @@ def LGAD(x, y_true, y_pred_S, y_pred_T, lambda_CE=1.0, lambda_KL=3.0, lambda_GAD
     KL_loss = temperature ** 2 * LKL(torch.nn.functional.log_softmax(y_pred_S, dim=1),
                                      torch.nn.functional.log_softmax(y_pred_T, dim=1))
 
-    CE_loss_T = -LCE(y_pred_T, y_true)
-    CE_loss_T.backward(retain_graph=True)
-    CE_loss.backward(retain_graph=True)
-    grad_discrepancy = torch.norm(x.grad)
+    CE_loss_T = LCE(y_pred_T, y_true)
+    # CE_loss_T.backward(retain_graph=True)
+    teacher_grad = torch.autograd.grad(CE_loss_T, x, retain_graph=True, create_graph=True)[0]
+    # CE_loss.backward(retain_graph=True)
+    student_grad = torch.autograd.grad(CE_loss, x, retain_graph=True, create_graph=True)[0]
+    grad_discrepancy = torch.norm(teacher_grad-student_grad)
+    # grad_discrepancy = torch.norm(x.grad)
     # print(f"CE:{CE_loss},KL:{KL_loss},GAD:{grad_discrepancy}")
 
     return lambda_CE * CE_loss + lambda_KL * KL_loss + lambda_GAD * grad_discrepancy, CE_loss, KL_loss, grad_discrepancy

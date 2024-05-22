@@ -13,7 +13,6 @@ class StudentModel(nn.Module):
         self.fc2 = nn.Linear(10, 10)
         self.fc3 = nn.Linear(10, 2)
         self.relu = nn.ReLU()
-        self.softmax = nn.Softmax()
 
     def forward(self, x):
         x = self.relu(self.fc1(x))
@@ -27,7 +26,9 @@ if __name__ == "__main__":
     np.random.seed(42)
     dim = 2
     delta_radius = 0.05
-    for frequency in np.linspace(0.06, 0.56, 26):
+
+    for frequency in np.linspace(0.50, 0.56, 1):
+
         student = StudentModel(dim)
         mock_teacher = MockNeuralNetwork(dim, frequency)
         # Generate synthetic data using normal distribution
@@ -35,7 +36,11 @@ if __name__ == "__main__":
         print(f"teacher frequency: {frequency}  "
               f"teacher {delta_radius}-robustness: {mock_teacher.data_robustness(synthetic_data, delta_radius):0.3f}")
 
-        knowledge_distillation(synthetic_data, mock_teacher, student, 1000, 1, True)
+        knowledge_distillation(synthetic_data, mock_teacher, student, 1000, 50, True)
         torch.onnx.export(student, args=(synthetic_data[1]),
                           f=f"models/dim_{dim}_delta_{delta_radius}_frequency_{frequency}.onnx")
         torch.save(student.state_dict(), f"models/dim_{dim}_delta_{delta_radius}_frequency_{frequency}.pt")
+
+        # confidence is just a threshold use softmax of outputs
+        # for distillation reject samples with low confidence
+        # german credit dataset
