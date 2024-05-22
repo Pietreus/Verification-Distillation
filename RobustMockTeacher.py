@@ -11,10 +11,12 @@ class Sawtooth_wave(torch.autograd.Function):
         x_scaled = torch.remainder(input * frequency, 0.5)  # cut up x and rescale so it goes from 0 to 1
         # print(x_scaled)
         x_sign = torch.sign(torch.remainder(input * frequency, 1) - x_scaled - 10 ** -10)
+        # x_sign[torch.abs(input)<0.2] = -x_sign[torch.abs(input)<0.2]
         ctx.save_for_backward(x_sign)
 
         #
         return x_sign - slope * x_scaled * x_sign
+        # return x_sign*slope/4 - slope * x_scaled * x_sign
 
     @staticmethod
     def backward(ctx, grad_output):
@@ -30,9 +32,38 @@ class Sawtooth_wave(torch.autograd.Function):
 
     # return x_sign - slope * x_scaled * x_sign
 
+class Squaretooth_wave(torch.autograd.Function):
+
+    @staticmethod
+    def forward(ctx, input, frequency = 1):
+        slope = 4  # cover a distance of -1 to 1 in time frequency/2
+        x_scaled = torch.remainder(input * frequency, 0.5)  # cut up x and rescale so it goes from 0 to 1
+        # print(x_scaled)
+        x_sign = torch.sign(torch.remainder(input * frequency, 1) - x_scaled - 10 ** -10)
+        # x_sign[torch.abs(input)<0.2] = -x_sign[torch.abs(input)<0.2]
+        ctx.save_for_backward(x_sign)
+
+        return x_sign
+        # return x_sign*slope/4 - slope * x_scaled * x_sign
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        x_sign, = ctx.saved_tensors
+        return torch.zeros_like(x_sign), None
+
+# def sawtooth_wave(x, frequency):
+#     slope = 4  # cover a distance of -1 to 1 in time frequency/2
+#     x_scaled = torch.remainder(x * frequency, 0.5)  # cut up x and rescale so it goes from 0 to 1
+#     print(x_scaled)
+# x_sign = torch.sign(torch.remainder(x * frequency, 1) - x_scaled - 10 ** -10)
+
+# return x_sign - slope * x_scaled * x_sign
+
+
+
 
 class MockNeuralNetwork(torch.nn.Module):
-    def __init__(self, num_dim, frequency=1, seed=42):
+    def __init__(self, num_dim, frequency=1, seed=42, device="cpu"):
         super().__init__()
         self.seed = seed
         self.num_dim = num_dim
@@ -44,13 +75,14 @@ class MockNeuralNetwork(torch.nn.Module):
 
         # Random constant projection vector
         # with this calculating robustness is not easy, the below projection is easy
-        self.projection_vector = torch.ones((num_dim, 1), dtype=torch.float, requires_grad=True)
+        self.projection_vector = torch.ones((num_dim, 1), dtype=torch.float, requires_grad=True).to(device)
 
     def raw_output(self, x):
         # Project input onto the random projection vector
         projected_input = torch.matmul(x, self.projection_vector)
         # Apply sawtooth function
         return Sawtooth_wave().apply(projected_input, self.frequency)
+        # return Squaretooth_wave().apply(projected_input, self.frequency)
 
     def forward(self, inputs):
 
@@ -65,6 +97,7 @@ class MockNeuralNetwork(torch.nn.Module):
 
     def backward(self, grad_outputs):
         return Sawtooth_wave.backward(grad_outputs)
+        # return Squaretooth_wave.backward(grad_outputs)
 
     def theoretical_robustness(self, threshold):
         """

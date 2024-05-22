@@ -15,7 +15,7 @@ from RobustMockTeacher import MockNeuralNetwork
 from torch.utils.tensorboard import SummaryWriter
 writer = SummaryWriter()
 
-def LGAD(x, y_true, y_pred_S, y_pred_T, lambda_CE=1.0, lambda_KL=3.0, lambda_GAD=200.0,
+def LGAD(x, y_true, y_pred_S, y_pred_T, lambda_CE=1.0, lambda_KL=1.0, lambda_GAD=1.0,
          temperature=1.0):
     LCE = torch.nn.CrossEntropyLoss()
     LKL = torch.nn.KLDivLoss(log_target=True)
@@ -35,7 +35,8 @@ def LGAD(x, y_true, y_pred_S, y_pred_T, lambda_CE=1.0, lambda_KL=3.0, lambda_GAD
     return lambda_CE * CE_loss + lambda_KL * KL_loss + lambda_GAD * grad_discrepancy, CE_loss, KL_loss, grad_discrepancy
 
 
-def plot_networks(teacher_model, student_model, synthetic_data, synthetic_labels, save=True, show=True):
+def plot_networks(teacher_model, student_model, synthetic_data, synthetic_labels, save=True, show=True,
+                  l_GAD=1, l_CE=1, l_KD=1, confidence=0.5):
     # Ensure the models are in evaluation mode
     teacher_model.eval()
     student_model.eval()
@@ -50,15 +51,15 @@ def plot_networks(teacher_model, student_model, synthetic_data, synthetic_labels
         student_outputs = student_model(synthetic_data)
 
     # Convert outputs to numpy arrays for plotting
-    teacher_outputs = teacher_outputs.numpy()
-    student_outputs = student_outputs.numpy()
+    teacher_outputs = teacher_outputs.to("cpu").numpy()
+    student_outputs = student_outputs.to("cpu").numpy()
 
     # Plotting
-    fig, axes = plt.subplots(3, 2, figsize=(12, 18))
+    fig, axes = plt.subplots(4, 2, figsize=(12, 18))
 
     # Teacher model output plots
     axes[0, 0].scatter(synthetic_data[:, 0], synthetic_data[:, 1], c=teacher_outputs[:, 0], cmap='viridis', s=5)
-    axes[0, 0].set_title('Teacher Model Output 1')
+    axes[0, 0].set_title(f'Teacher Model Output 1, GAD: {l_GAD}, CE: {l_CE}, KD: {l_KD}')
     axes[0, 1].scatter(synthetic_data[:, 0], synthetic_data[:, 1], c=teacher_outputs[:, 1], cmap='viridis', s=5)
     axes[0, 1].set_title('Teacher Model Output 2')
 
@@ -73,6 +74,14 @@ def plot_networks(teacher_model, student_model, synthetic_data, synthetic_labels
     axes[2, 0].set_title('Synthetic Labels')
     axes[2, 1].scatter(synthetic_data[:, 0], synthetic_data[:, 1], c=student_outputs[:, 0]>0, cmap='viridis', s=5)
     axes[2, 1].set_title('Student Labels')
+
+    # Synthetic labels plot
+    mask = np.abs(teacher_outputs[:, 0]) > confidence
+    axes[3, 0].scatter(synthetic_data[mask, 0], synthetic_data[mask, 1], c=synthetic_labels[mask, 0]>0, cmap='viridis', s=5)
+    axes[3, 0].set_title('Synthetic Labels')
+    mask = np.abs(student_outputs[:, 0]) > confidence
+    axes[3, 1].scatter(synthetic_data[mask, 0], synthetic_data[mask, 1], c=student_outputs[mask, 0]>0, cmap='viridis', s=5)
+    axes[3, 1].set_title('Student High-confidence Labels')
 
     # axes[2, 1].axis('off')  # Turn off the last subplot as it's not needed
 
@@ -93,14 +102,16 @@ def plot_networks(teacher_model, student_model, synthetic_data, synthetic_labels
 
 
 
-def knowledge_distillation(distillation_data, teacher_model, student_model, batch_size, epochs, print_functions=False):
+def knowledge_distillation(distillation_data, teacher_model, student_model, batch_size, epochs, l_CE, l_KD, l_GAD,
+                           print_functions=False, device="cpu", confidence=0.5):
 
 
     # Get teacher predictions for synthetic data
     teacher_predictions = teacher_model(distillation_data)
 
     # Convert teacher predictions to labels
-    synthetic_labels = torch.eye(2)[torch.argmax(teacher_predictions, dim=1)]
+    synthetic_labels = torch.eye(2).to(device)[torch.argmax(teacher_predictions, dim=1)]
+    #synthetic_labels.to(device)
 
     # Train student model using synthetic data and teacher predictions
     optimizer = optim.Adam(student_model.parameters(), lr=0.0005)
@@ -122,7 +133,8 @@ def knowledge_distillation(distillation_data, teacher_model, student_model, batc
             # Set requires_grad=True on inputs to enable gradient computation
 #np.exp(-epoch / 100)
             # Compute your custom loss
-            loss, ce, kl, gad = LGAD(inputs, targets, outputs, teacher_outputs, temperature=1)
+            loss, ce, kl, gad = LGAD(inputs, targets, outputs, teacher_outputs, temperature=1, lambda_GAD=l_GAD,
+                                     lambda_CE=l_CE, lambda_KL=l_KD)
             writer.add_scalar('Loss/Cross_Entropy', ce.item(), epoch * len(train_loader) + batch_idx)
             writer.add_scalar('Loss/KL_Divergence', kl.item(), epoch * len(train_loader) + batch_idx)
             writer.add_scalar('Loss/GradientDisparity', gad.item(), epoch * len(train_loader) + batch_idx)
@@ -133,7 +145,10 @@ def knowledge_distillation(distillation_data, teacher_model, student_model, batc
     writer.flush()
     writer.close()
     if print_functions:
-        plot_networks(teacher_model,student_model,distillation_data,synthetic_labels)
+        plot_networks(teacher_model,student_model,distillation_data,synthetic_labels,l_GAD=l_GAD,l_CE=l_CE,l_KD=l_KD,
+                      confidence=confidence)
+
+    return loss
 
 
 if __name__ == "__main__":
