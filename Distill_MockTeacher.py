@@ -9,15 +9,21 @@ from RobustMockTeacher import MockNeuralNetwork
 class StudentModel(nn.Module):
     def __init__(self, input_dim):
         super(StudentModel, self).__init__()
-        self.fc1 = nn.Linear(input_dim, 10)
-        self.fc2 = nn.Linear(10, 10)
-        self.fc3 = nn.Linear(10, 2)
+        self.fc1 = nn.Linear(input_dim, 3)
+        self.fc2 = nn.Linear(3, 3)
+        self.fc3 = nn.Linear(3, 3)
+        self.fc4 = nn.Linear(3, 3)
+        self.fc5 = nn.Linear(3, 3)
+        self.fc6 = nn.Linear(3, 2)
         self.relu = nn.ReLU()
 
     def forward(self, x):
         x = self.relu(self.fc1(x))
         x = self.relu(self.fc2(x))
-        x = self.fc3(x)
+        x = self.relu(self.fc3(x))
+        x = self.relu(self.fc4(x))
+        x = self.relu(self.fc5(x))
+        x = self.fc6(x)
         return x
 
 def high_confidence_data(synthetic_data, model, confidence):
@@ -33,13 +39,13 @@ if __name__ == "__main__":
     # if torch.cuda.is_available():
     #     device = "cuda:0"
 
-    for frequency in np.linspace(0.2, 0.56, 1):
+    for frequency in np.linspace(0.10, 0.56, 1):
 
         losses = []
 
         for l_GAD in np.linspace(0.5, 4, 5):
             for l_CE in np.linspace(1.5, 4, 5):
-                for l_KD in np.linspace(0, 1, 5):
+                for l_KD in np.linspace(1, 1, 5):
                     student = StudentModel(dim)
                     mock_teacher = MockNeuralNetwork(dim, frequency, device=device)
                     student.to(device)
