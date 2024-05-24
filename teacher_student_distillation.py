@@ -174,7 +174,7 @@ if __name__ == "__main__":
     l_CE = 2
     l_KD = 5
 
-    epochs = 100
+    epochs = 50
 
     for epoch in tqdm(range(epochs)):
 
@@ -225,6 +225,58 @@ if __name__ == "__main__":
     torch.onnx.export(teacher, args=(val_dataset[0][0]),
                       f=f"models/teacher_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.onnx")
     torch.save(teacher.state_dict(), f"models/teacher_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.pt")
+
+    # Checking for disagreement.
+    def disagreement_check(dataset, teacher, student):
+
+        data_loader = DataLoader(dataset, batch_size=128)
+        optimizer = optim.Adam(student.parameters(), lr=0.0005)
+
+        differences = []
+        grad_discrepancies = []
+        student_grads = []
+        teacher_grads = []
+        ratios = []
+        difference_ratios = []
+
+        for samples, labels in data_loader:
+            optimizer.zero_grad()
+
+            samples.requires_grad = True
+            student_outputs = student(samples)
+            teacher_outputs = teacher(samples)
+            student_predicted = torch.max(student_outputs.data, 1)[0]
+            teacher_predicted = torch.max(teacher_outputs.data, 1)[0]
+            y_true = torch.max(labels, 1)[1]
+
+            # Max point value disagreement.
+            difference = torch.max(torch.abs(torch.max(student_outputs.data, 1)[0] - torch.max(teacher_outputs.data, 1)[0]))
+            differences.append(difference)
+            difference_ratios.append((student_outputs.data - teacher_outputs.data).max()/student_outputs.data.max())
+
+            # Computing CE gradient
+            LCE = torch.nn.CrossEntropyLoss()
+            CE_loss_T = LCE(student_outputs, labels)
+            CE_loss_S = LCE(teacher_outputs, labels)
+
+            teacher_grad = torch.autograd.grad(CE_loss_T, samples, retain_graph=True, create_graph=True)[0]
+            student_grad = torch.autograd.grad(CE_loss_S, samples, retain_graph=True, create_graph=True)[0]
+
+            teacher_grads.append(torch.norm(teacher_grad))
+            student_grads.append(torch.norm(student_grad))
+            ratios.append(torch.norm(student_grad)/torch.norm(teacher_grad))
+
+            grad_discrepancy = torch.norm(teacher_grad-student_grad)
+            grad_discrepancies.append(grad_discrepancy)
+
+        print(torch.max(torch.stack(differences)))  # Function values
+        print(torch.max(torch.stack(grad_discrepancies)))  # Gradient abs difference
+        print(torch.max(torch.stack(teacher_grads)))
+        print(torch.max(torch.stack(student_grads)))
+        print(torch.max(torch.stack(ratios)))  # student_grad/teacher_grad
+        print(torch.max(torch.stack(difference_ratios)))  # ratio of difference in prediction
+
+    disagreement_check(distillation_data, teacher=teacher, student=student)
 
 
 
