@@ -126,7 +126,8 @@ def knowledge_distillation(distillation_data: torch.Tensor, teacher_model, stude
     dataset = SyntheticDataset(distillation_data, synthetic_labels)
 
     # Create DataLoader
-    for epoch in tqdm(range(epochs)):
+    # for epoch in tqdm(range(epochs)):
+    for epoch in range(epochs):
         train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
         for batch_idx, (inputs, targets) in enumerate(train_loader):

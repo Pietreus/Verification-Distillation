@@ -22,13 +22,22 @@ class StudentModel(nn.Module):
 
 
 def high_confidence_data(synthetic_data, model, confidence):
-    mask = torch.flatten(torch.abs(model(synthetic_data)[:, 0]) > confidence, 0)
-    return synthetic_data[mask]
+    mask = (torch.abs(torch.softmax(model(synthetic_data), dim=1)-0.5)*2 > confidence)[:, 0]
+    return synthetic_data[mask, :]
 
 
 def all_high_confidence_data_delta_robust(synthetic_data, model, confidence, delta):
     hi_conf_data = high_confidence_data(synthetic_data, model, confidence)
+    if len(hi_conf_data) == 0:
+        return np.nan
+
     return np.all(np.abs(np.sum(hi_conf_data.numpy(), axis=1)) > delta)
+
+def all_high_confidence_data_robustness_radius(synthetic_data, model, confidence):
+    hi_conf_data = high_confidence_data(synthetic_data, model, confidence)
+    if len(hi_conf_data) == 0:
+        return np.nan
+    return np.min(np.abs(np.sum(hi_conf_data.numpy(), axis=1)))
 
 
 def generate_normal_matrix(center, variance, shape, support_min, support_max, distance_cutoff=2):
@@ -76,7 +85,6 @@ def generate_normal_matrix(center, variance, shape, support_min, support_max, di
         # Filter points to be above the diagonal
         # matrix = matrix[(np.sum(matrix, axis=1) >= 0),:]
         count += num_valid
-        print("fail")
 
     return matrix
 
@@ -95,11 +103,12 @@ if __name__ == "__main__":
     delta_radius = 0.05
     device = "cpu"
 
-    for frequency in [1, 2, 5, 10, 20, 50, 100]:
-        for _ in range(1):
-            synthetic_data = np.vstack((
-                generate_normal_matrix(0.707, variance, (n, dim), -8, 8, distance_cutoff=2.5 * np.sqrt(variance)),
-                -generate_normal_matrix(0.707, variance, (n, dim), -8, 8, distance_cutoff=2.5 * np.sqrt(variance))))
+    synthetic_data = np.vstack((
+        generate_normal_matrix(0.707, variance, (n, dim), -8, 8, distance_cutoff=2.5 * np.sqrt(variance)),
+        -generate_normal_matrix(0.707, variance, (n, dim), -8, 8, distance_cutoff=2.5 * np.sqrt(variance))))
+    for confidence in [0.5, 0.6, 0.7]:
+        for frequency in [1, 5, 10, 20, 25, 30, 35, 40, 45, 50, 75, 100, 150, 200]:
+
             student = StudentModel(dim)
             mock_teacher = MockNeuralNetwork(dim, frequency, device=device)
             student.to(device)
@@ -115,6 +124,9 @@ if __name__ == "__main__":
                                           l_GAD=l_GAD, l_CE=l_CE, l_KD=l_KD,
                                           confidence=confidence)
 
-            print(f"variance: {variance:.3f} confidence: {confidence}, delta: {delta_radius}"
+            print(f"frequency: {frequency:.3f} "
+                  f"variance: {variance:.3f} confidence: {confidence}, delta: {delta_radius}"
                   f" teacher robust: {all_high_confidence_data_delta_robust(synthetic_data, mock_teacher, confidence, delta_radius)}"
-                  f" student robust: {all_high_confidence_data_delta_robust(synthetic_data, student, confidence, delta_radius)}")
+                  f"({all_high_confidence_data_robustness_radius(synthetic_data, mock_teacher, confidence):.3f})"
+                  f" student robust: {all_high_confidence_data_delta_robust(synthetic_data, student, confidence, delta_radius)}"
+                  f"({all_high_confidence_data_robustness_radius(synthetic_data, student, confidence):.3f})")
