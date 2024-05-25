@@ -81,7 +81,7 @@ class MockNeuralNetwork(torch.nn.Module):
         # Project input onto the random projection vector
         projected_input = torch.matmul(x, self.projection_vector)
         # Apply sawtooth function
-        return Squaretooth_wave().apply(projected_input, self.frequency)
+        return 2*torch.sigmoid(projected_input * self.frequency)-1
         # return Squaretooth_wave().apply(projected_input, self.frequency)
 
     def forward(self, inputs):
@@ -95,8 +95,8 @@ class MockNeuralNetwork(torch.nn.Module):
         # return output_two_call
         return torch.cat((output, -output), dim=1)
 
-    def backward(self, grad_outputs):
-        return Squaretooth_wave.backward(grad_outputs)
+    # def backward(self, grad_outputs):
+    #     return Squaretooth_wave.backward(grad_outputs)
         # return Squaretooth_wave.backward(grad_outputs)
 
     def theoretical_robustness(self, threshold):

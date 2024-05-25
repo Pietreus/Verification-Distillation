@@ -35,11 +35,13 @@ def LGAD(x, y_true, y_pred_S, y_pred_T, lambda_CE=1.0, lambda_KL=1.0, lambda_GAD
     return lambda_CE * CE_loss + lambda_KL * KL_loss + lambda_GAD * grad_discrepancy, CE_loss, KL_loss, grad_discrepancy
 
 
-def plot_networks(teacher_model, student_model, synthetic_data, synthetic_labels, save=True, show=True,
+def plot_networks(teacher_model, student_model, synthetic_data, device, save=True, show=True,
                   l_GAD=1, l_CE=1, l_KD=1, confidence=0.5):
     # Ensure the models are in evaluation mode
     teacher_model.eval()
     student_model.eval()
+    teacher_predictions = teacher_model(synthetic_data)
+    synthetic_labels = torch.eye(2).to(device)[torch.argmax(teacher_predictions, dim=1)]
 
     # Convert synthetic data to a PyTorch tensor if it's not already
     if not isinstance(synthetic_data, torch.Tensor):
@@ -101,11 +103,16 @@ def plot_networks(teacher_model, student_model, synthetic_data, synthetic_labels
         writer.add_image('Model Outputs', image, 0)
 
 
+def high_confidence_data(synthetic_data, model, confidence):
+    mask = torch.flatten(torch.abs(model(synthetic_data)[:, 0]) > confidence, 0)
+    return synthetic_data[mask]
 
-def knowledge_distillation(distillation_data, teacher_model, student_model, batch_size, epochs, l_CE, l_KD, l_GAD,
+
+def knowledge_distillation(distillation_data: torch.Tensor, teacher_model, student_model, batch_size, epochs, l_CE, l_KD, l_GAD,
                            print_functions=False, device="cpu", confidence=0.5):
 
-
+    full_distillation_data = distillation_data.clone()
+    distillation_data = high_confidence_data(distillation_data,teacher_model, confidence)
     # Get teacher predictions for synthetic data
     teacher_predictions = teacher_model(distillation_data)
 
@@ -133,7 +140,7 @@ def knowledge_distillation(distillation_data, teacher_model, student_model, batc
             # Set requires_grad=True on inputs to enable gradient computation
 #np.exp(-epoch / 100)
             # Compute your custom loss
-            loss, ce, kl, gad = LGAD(inputs, targets, outputs, teacher_outputs, temperature=1, lambda_GAD=l_GAD,
+            loss, ce, kl, gad = LGAD(inputs, targets, outputs, teacher_outputs, temperature=np.exp(-epoch / 100), lambda_GAD=l_GAD,
                                      lambda_CE=l_CE, lambda_KL=l_KD)
             writer.add_scalar('Loss/Cross_Entropy', ce.item(), epoch * len(train_loader) + batch_idx)
             writer.add_scalar('Loss/KL_Divergence', kl.item(), epoch * len(train_loader) + batch_idx)
@@ -145,7 +152,7 @@ def knowledge_distillation(distillation_data, teacher_model, student_model, batc
     writer.flush()
     writer.close()
     if print_functions:
-        plot_networks(teacher_model,student_model,distillation_data,synthetic_labels,l_GAD=l_GAD,l_CE=l_CE,l_KD=l_KD,
+        plot_networks(teacher_model,student_model,full_distillation_data,device,l_GAD=l_GAD,l_CE=l_CE,l_KD=l_KD,
                       confidence=confidence)
 
     return loss
