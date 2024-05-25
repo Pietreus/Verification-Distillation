@@ -59,13 +59,13 @@ def generate_normal_matrix(center, variance, shape, support_min, support_max, di
     while count < num_elements:
         # Generate candidate points
         samples = np.random.normal(loc=center, scale=std_dev,
-                                   size=((1 + int(np.sqrt(variance))) * num_elements - count, shape[1]))
+                                   size=((1 + int(np.sqrt(variance))) * num_elements - count+1, shape[1]))
 
         # Filter points within the support range
         support_valid_samples = samples[(np.sum(samples, axis=1) >= 0) &
                                         (np.all(samples >= support_min, axis=1)) &
                                         (np.all(samples <= support_max, axis=1)) &
-                                        (np.linalg.norm(samples-center, axis=1) <= distance_cutoff), :]
+                                        (np.linalg.norm(samples - center, axis=1) <= distance_cutoff), :]
         # diag_valid_samples = samples[(np.sum(samples,axis=1) >= 0), :]
         # Determine how many valid samples we can use
         num_valid = min(len(support_valid_samples), shape[0] - count)
@@ -84,22 +84,22 @@ def generate_normal_matrix(center, variance, shape, support_min, support_max, di
 if __name__ == "__main__":
     torch.manual_seed(42)
     np.random.seed(42)
-    variance = 1
-    n = 5*10 ** 4
+    variance = 0.5 ** 2
+    n = 5 * 10 ** 4
     dim = 2
-    l_GAD = 1
+    l_GAD = 500
     l_CE = 5
     l_KD = 1
-    confidence = 0.7
-    frequency = 10
+    confidence = 0.5
+    frequency = 100
     delta_radius = 0.05
     device = "cpu"
 
-    for variance in np.linspace(0.5**2, 0.7, 1):
+    for frequency in [1, 2, 5, 10, 20, 50, 100]:
         for _ in range(1):
             synthetic_data = np.vstack((
-                generate_normal_matrix(0.707, variance, (n, dim), -8, 8, distance_cutoff=2.5*np.sqrt(variance)),
-                -generate_normal_matrix(0.707, variance, (n, dim), -8, 8, distance_cutoff=2.5*np.sqrt(variance))))
+                generate_normal_matrix(0.707, variance, (n, dim), -8, 8, distance_cutoff=2.5 * np.sqrt(variance)),
+                -generate_normal_matrix(0.707, variance, (n, dim), -8, 8, distance_cutoff=2.5 * np.sqrt(variance))))
             student = StudentModel(dim)
             mock_teacher = MockNeuralNetwork(dim, frequency, device=device)
             student.to(device)
@@ -110,7 +110,7 @@ if __name__ == "__main__":
             # print(f"teacher frequency: {frequency}  "
             #       f"teacher {delta_radius}-robustness: {mock_teacher.data_robustness(synthetic_data, delta_radius):0.3f}")
 
-            loss = knowledge_distillation(synthetic_data, mock_teacher, student, batch_size=1000, epochs=50,
+            loss = knowledge_distillation(synthetic_data, mock_teacher, student, batch_size=1000, epochs=20,
                                           print_functions=True, device=device,
                                           l_GAD=l_GAD, l_CE=l_CE, l_KD=l_KD,
                                           confidence=confidence)

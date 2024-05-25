@@ -19,11 +19,11 @@ def LGAD(x, y_true, y_pred_S, y_pred_T, lambda_CE=1.0, lambda_KL=1.0, lambda_GAD
          temperature=1.0):
     LCE = torch.nn.CrossEntropyLoss()
     LKL = torch.nn.KLDivLoss(log_target=True)
-    CE_loss = LCE(y_pred_S, y_true)
+    CE_loss = LCE(torch.nn.functional.softmax(y_pred_S, dim=1), y_true)
     KL_loss = temperature ** 2 * LKL(torch.nn.functional.log_softmax(y_pred_S, dim=1),
                                      torch.nn.functional.log_softmax(y_pred_T, dim=1))
 
-    CE_loss_T = LCE(y_pred_T, y_true)
+    CE_loss_T = LCE(torch.nn.functional.softmax(y_pred_T, dim=1), y_true)
     # CE_loss_T.backward(retain_graph=True)
     teacher_grad = torch.autograd.grad(CE_loss_T, x, retain_graph=True, create_graph=True)[0]
     # CE_loss.backward(retain_graph=True)
@@ -53,8 +53,8 @@ def plot_networks(teacher_model, student_model, synthetic_data, device, save=Tru
         student_outputs = student_model(synthetic_data)
 
     # Convert outputs to numpy arrays for plotting
-    teacher_outputs = teacher_outputs.to("cpu").numpy()
-    student_outputs = student_outputs.to("cpu").numpy()
+    teacher_outputs = torch.softmax(teacher_outputs, dim=1).to("cpu").numpy()
+    student_outputs = torch.softmax(student_outputs, dim=1).to("cpu").numpy()
 
     # Plotting
     fig, axes = plt.subplots(4, 2, figsize=(12, 18))
@@ -74,15 +74,15 @@ def plot_networks(teacher_model, student_model, synthetic_data, device, save=Tru
     # Synthetic labels plot
     axes[2, 0].scatter(synthetic_data[:, 0], synthetic_data[:, 1], c=synthetic_labels[:, 0]>0, cmap='viridis', s=5)
     axes[2, 0].set_title('Synthetic Labels')
-    axes[2, 1].scatter(synthetic_data[:, 0], synthetic_data[:, 1], c=student_outputs[:, 0]>0, cmap='viridis', s=5)
+    axes[2, 1].scatter(synthetic_data[:, 0], synthetic_data[:, 1], c=student_outputs[:, 0]>0.5, cmap='viridis', s=5)
     axes[2, 1].set_title('Student Labels')
 
     # Synthetic labels plot
-    mask = np.abs(teacher_outputs[:, 0]) > confidence
+    mask = np.abs(teacher_outputs[:, 0]-0.5)*2 > confidence
     axes[3, 0].scatter(synthetic_data[mask, 0], synthetic_data[mask, 1], c=synthetic_labels[mask, 0]>0, cmap='viridis', s=5)
     axes[3, 0].set_title('Synthetic Labels')
-    mask = np.abs(student_outputs[:, 0]) > confidence
-    axes[3, 1].scatter(synthetic_data[mask, 0], synthetic_data[mask, 1], c=student_outputs[mask, 0]>0, cmap='viridis', s=5)
+    mask = np.abs(student_outputs[:, 0]-0.5)*2 > confidence
+    axes[3, 1].scatter(synthetic_data[mask, 0], synthetic_data[mask, 1], c=student_outputs[mask, 0]>0.5, cmap='viridis', s=5)
     axes[3, 1].set_title('Student High-confidence Labels')
 
     # axes[2, 1].axis('off')  # Turn off the last subplot as it's not needed
@@ -112,7 +112,7 @@ def knowledge_distillation(distillation_data: torch.Tensor, teacher_model, stude
                            print_functions=False, device="cpu", confidence=0.5):
 
     full_distillation_data = distillation_data.clone()
-    distillation_data = high_confidence_data(distillation_data,teacher_model, confidence)
+    # distillation_data = high_confidence_data(distillation_data,teacher_model, confidence)
     # Get teacher predictions for synthetic data
     teacher_predictions = teacher_model(distillation_data)
 
