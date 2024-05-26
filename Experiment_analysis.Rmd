@@ -1,0 +1,131 @@
+
+---
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+
+```{r setup, include=FALSE, cache=FALSE}
+library(knitr)
+options(scipen = 999)#,digits=3)
+# set global chunk options
+opts_chunk$set(fig.path='generatedgraphics/graphics-',out.width="90%",fig.width=12,fig.height=4,
+                fig.align='left',
+                fig.show='asis',message=F,warning=F,cache=F,echo=F)
+opts_knit$get('concordance')
+set.seed(123)
+library(ggplot2)
+library(tidyverse)
+```
+
+```{r data}
+
+data <- read.csv("runs/May26_21-12-59_thinkpad/summary.csv")
+
+data
+
+
+```
+
+```{r}
+
+
+colors <- c("blue", "cyan", "green", "yellow", "red") # You can adjust the colors
+values <- c(0.0, 0.1, 0.3, 0.6, 1) # Adjust values to match your data range
+
+
+ggplot(data) +
+        geom_point(aes(x = frequency,
+                         y = factor(confidence),
+                         color = grad_ratio,
+                         shape = factor(teacher_robust),
+                         size = factor(student_robust))) +
+        scale_shape_manual(values = c(15, 16)) + # Define shapes for points
+        scale_size_manual(values = c(8, 4)) +   # Define sizes for points
+        labs(shape = "Teacher robust", size = "Student robust", x = "steepness of decision boundary",
+                y = "prediction confidence threshold", title = "Student/Teacher robustness vs Teacher steepness") +
+        # scale_x_log10() +
+        scale_x_continuous(limits= c(0,100)) +
+        scale_color_gradientn(
+          colours = colors,
+          values = rescale(values, to = c(0, 1)),
+          limits = c(0, 1), # Adjust according to your data range
+          # breaks = c(0, 0.3, 0.6, 5,12), # Adjust breaks according to your data range
+          guide = "colorbar", # Show color bar
+          na.value = "red", # Color for NA values
+          name = "Gradient Error" # Color bar label
+          ) +
+        theme_minimal() +
+        theme(legend.position = "bottom")
+
+
+```
+
+
+```{r}
+library(scales)
+
+ggplot(data) +
+        geom_point(aes(x = frequency,
+                         y = confidence,
+                         color = grad_ratio,
+                         size = 1/student_robustness_radius*teacher_robustness_radius)) +
+        scale_shape_manual(values = c(1, 16)) + # Define shapes for points
+        scale_x_log10() +
+        labs(shape = "Teacher robust", size = "Student less robust than teacher") +
+        scale_color_gradientn(
+          colours = colors,
+          values = rescale(values, to = c(0, 1)),
+          limits = c(0, 12), # Adjust according to your data range
+          # breaks = c(0, 0.3, 0.6, 5,12), # Adjust breaks according to your data range
+          guide = "colorbar", # Show color bar
+          na.value = "grey50", # Color for NA values
+          name = "Gradient Error" # Color bar label
+          ) +
+        scale_size_continuous(
+          range = c(1, 10), # Adjust range according to your preference
+          breaks = c(0, 6, 12), # Adjust breaks according to your data range
+          labels = c("0", "6", "12"), # Adjust labels as needed
+          trans = "sqrt", # Square root transformation for nonlinear scaling
+          name = "Teacher/Student robustness radius"
+        )+
+        theme_minimal() +
+        theme(legend.position = "bottom")
+
+
+
+```
+
+```{r}
+
+
+
+
+
+
+
+
+ggplot(data) +
+        geom_point(aes(x = frequency,
+                         y = confidence,
+                         color = grad_ratio,
+                         shape = factor(teacher_robust == student_robust)), size = 6) +
+        scale_shape_manual(values = c(15, 16)) + # Define shapes for points
+        labs(shape = "Teacher and student agree on robustness", size = "Student robust") +
+        # scale_x_log10() +
+        scale_color_gradientn(
+          colours = colors,
+          values = rescale(values, to = c(0, 1)),
+          limits = c(0, 1), # Adjust according to your data range
+          # breaks = c(0, 0.3, 0.6, 5,12), # Adjust breaks according to your data range
+          guide = "colorbar", # Show color bar
+          na.value = "red", # Color for NA values
+          name = "Gradient Error" # Color bar label
+          ) +
+        theme_minimal() +
+        theme(legend.position = "bottom")
+
+
+```

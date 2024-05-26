@@ -1,7 +1,9 @@
 import io
+import os
+from datetime import datetime
+import socket
 
 import numpy as np
-# import tensorflow as tf
 import torch
 from PIL import Image
 from matplotlib import pyplot as plt
@@ -13,7 +15,14 @@ from Dataset import SyntheticDataset
 from RobustMockTeacher import MockNeuralNetwork
 
 from torch.utils.tensorboard import SummaryWriter
-writer = SummaryWriter()
+
+# writer = SummaryWriter()
+current_time = datetime.now().strftime("%b%d_%H-%M-%S")
+# Get the hostname: e.g., thinkpad
+hostname = socket.gethostname()
+# Combine to form the full log directory path: e.g., my_subdir/May26_13-07-26_thinkpad
+log_dir = os.path.join("runs", f"{current_time}_{hostname}")
+
 
 def LGAD(x, y_true, y_pred_S, y_pred_T, lambda_CE=1.0, lambda_KL=4.0, lambda_GAD=1.0,
          temperature=1.0):
@@ -28,12 +37,57 @@ def LGAD(x, y_true, y_pred_S, y_pred_T, lambda_CE=1.0, lambda_KL=4.0, lambda_GAD
     teacher_grad = torch.autograd.grad(CE_loss_T, x, retain_graph=True, create_graph=True)[0]
     # CE_loss.backward(retain_graph=True)
     student_grad = torch.autograd.grad(CE_loss, x, retain_graph=True, create_graph=True)[0]
-    grad_discrepancy = torch.norm(teacher_grad-student_grad)
-    perc_grad_discrepancy = grad_discrepancy/torch.norm(student_grad)
+    grad_discrepancy = torch.norm(teacher_grad - student_grad)
+    perc_grad_discrepancy = grad_discrepancy / torch.norm(student_grad)
     # grad_discrepancy = torch.norm(x.grad)
     # print(f"CE:{CE_loss},KL:{KL_loss},GAD:{grad_discrepancy}")
 
     return lambda_CE * CE_loss + lambda_KL * KL_loss + lambda_GAD * grad_discrepancy, CE_loss, KL_loss, grad_discrepancy, perc_grad_discrepancy
+
+
+def save_tensors_for_later(teacher_outputs, student_outputs, synthetic_data, synthetic_labels,
+                           high_confidence_teacher_mask, high_confidence_student_mask, log_dir, step):
+    # Save tensors to disk
+    os.makedirs(log_dir, exist_ok=True)
+    torch.save(teacher_outputs, os.path.join(log_dir, f'teacher_outputs_{step}.pt'))
+    torch.save(student_outputs, os.path.join(log_dir, f'student_outputs_{step}.pt'))
+    torch.save(synthetic_data, os.path.join(log_dir, f'synthetic_data_{step}.pt'))
+    torch.save(synthetic_labels, os.path.join(log_dir, f'synthetic_labels_{step}.pt'))
+    torch.save(high_confidence_teacher_mask, os.path.join(log_dir, f'high_confidence_teacher_mask_{step}.pt'))
+    torch.save(high_confidence_student_mask, os.path.join(log_dir, f'high_confidence_student_mask_{step}.pt'))
+
+
+def log_networks_to_tensorboard(writer, teacher_model, student_model, synthetic_data, device, step, confidence=0.5,
+                                **kwargs):
+    # Ensure the models are in evaluation mode
+    teacher_model.eval()
+    student_model.eval()
+
+    synthetic_data = synthetic_data.to(device)
+
+    with torch.no_grad():
+        teacher_outputs = torch.softmax(teacher_model(synthetic_data), dim=1)
+        student_outputs = torch.softmax(student_model(synthetic_data), dim=1)
+
+    synthetic_labels = torch.eye(2).to(device)[torch.argmax(teacher_outputs, dim=1)]
+    high_confidence_teacher_mask = (torch.abs(teacher_outputs[:, 0] - 0.5) * 2 > confidence)
+    high_confidence_student_mask = (torch.abs(student_outputs[:, 0] - 0.5) * 2 > confidence)
+
+    # Move tensors to CPU for saving
+    teacher_outputs = teacher_outputs.cpu()
+    student_outputs = student_outputs.cpu()
+    synthetic_data = synthetic_data.cpu()
+    synthetic_labels = synthetic_labels.cpu()
+    high_confidence_teacher_mask = high_confidence_teacher_mask.cpu()
+    high_confidence_student_mask = high_confidence_student_mask.cpu()
+
+    # Log additional configuration details as scalars
+    for key, value in kwargs.items():
+        writer.add_scalar(f'Config/{key}', value, step)
+
+    # Save tensors for later processing
+    save_tensors_for_later(teacher_outputs, student_outputs, synthetic_data, synthetic_labels,
+                           high_confidence_teacher_mask, high_confidence_student_mask, writer.log_dir, step)
 
 
 def plot_networks(teacher_model, student_model, synthetic_data, device, save=True, show=True,
@@ -73,17 +127,19 @@ def plot_networks(teacher_model, student_model, synthetic_data, device, save=Tru
     axes[1, 1].set_title('Student Model Output 2')
 
     # Synthetic labels plot
-    axes[2, 0].scatter(synthetic_data[:, 0], synthetic_data[:, 1], c=synthetic_labels[:, 0]>0, cmap='viridis', s=5)
+    axes[2, 0].scatter(synthetic_data[:, 0], synthetic_data[:, 1], c=synthetic_labels[:, 0] > 0, cmap='viridis', s=5)
     axes[2, 0].set_title('Synthetic Labels')
-    axes[2, 1].scatter(synthetic_data[:, 0], synthetic_data[:, 1], c=student_outputs[:, 0]>0.5, cmap='viridis', s=5)
+    axes[2, 1].scatter(synthetic_data[:, 0], synthetic_data[:, 1], c=student_outputs[:, 0] > 0.5, cmap='viridis', s=5)
     axes[2, 1].set_title('Student Labels')
 
     # Synthetic labels plot
-    mask = np.abs(teacher_outputs[:, 0]-0.5)*2 > confidence
-    axes[3, 0].scatter(synthetic_data[mask, 0], synthetic_data[mask, 1], c=synthetic_labels[mask, 0]>0, cmap='viridis', s=5)
+    mask = np.abs(teacher_outputs[:, 0] - 0.5) * 2 > confidence
+    axes[3, 0].scatter(synthetic_data[mask, 0], synthetic_data[mask, 1], c=synthetic_labels[mask, 0] > 0,
+                       cmap='viridis', s=5)
     axes[3, 0].set_title('Synthetic Labels')
-    mask = np.abs(student_outputs[:, 0]-0.5)*2 > confidence
-    axes[3, 1].scatter(synthetic_data[mask, 0], synthetic_data[mask, 1], c=student_outputs[mask, 0]>0.5, cmap='viridis', s=5)
+    mask = np.abs(student_outputs[:, 0] - 0.5) * 2 > confidence
+    axes[3, 1].scatter(synthetic_data[mask, 0], synthetic_data[mask, 1], c=student_outputs[mask, 0] > 0.5,
+                       cmap='viridis', s=5)
     axes[3, 1].set_title('Student High-confidence Labels')
 
     # axes[2, 1].axis('off')  # Turn off the last subplot as it's not needed
@@ -109,17 +165,20 @@ def high_confidence_data(synthetic_data, model, confidence):
     return synthetic_data[mask]
 
 
-def knowledge_distillation(distillation_data: torch.Tensor, teacher_model, student_model, batch_size, epochs, l_CE, l_KD, l_GAD,
-                           print_functions=False, device="cpu", confidence=0.5):
+def knowledge_distillation(distillation_data: torch.Tensor, teacher_model, student_model, batch_size, epochs, l_CE,
+                           l_KD, l_GAD,
+                           print_functions=False, device="cpu", confidence=0.5, teacher_freq=0.5):
+    print(teacher_freq)
+    writer = SummaryWriter(log_dir=os.path.join(log_dir, f"confidence_{confidence}_teacher_freq_{teacher_freq}"))
 
-    full_distillation_data = distillation_data.clone()
+    full_distillation_data = distillation_data
     # distillation_data = high_confidence_data(distillation_data,teacher_model, confidence)
     # Get teacher predictions for synthetic data
     teacher_predictions = teacher_model(distillation_data)
 
     # Convert teacher predictions to labels
     synthetic_labels = torch.eye(2).to(device)[torch.argmax(teacher_predictions, dim=1)]
-    #synthetic_labels.to(device)
+    # synthetic_labels.to(device)
 
     # Train student model using synthetic data and teacher predictions
     optimizer = optim.Adam(student_model.parameters(), lr=0.0005)
@@ -127,8 +186,8 @@ def knowledge_distillation(distillation_data: torch.Tensor, teacher_model, stude
     dataset = SyntheticDataset(distillation_data, synthetic_labels)
 
     # Create DataLoader
-    # for epoch in tqdm(range(epochs)):
-    for epoch in range(epochs):
+    for epoch in tqdm(range(epochs), ncols=50 + epochs):
+    # for epoch in range(epochs):
         train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
         for batch_idx, (inputs, targets) in enumerate(train_loader):
@@ -140,10 +199,11 @@ def knowledge_distillation(distillation_data: torch.Tensor, teacher_model, stude
             outputs = student_model(inputs)
             teacher_outputs = teacher_model(inputs)
             # Set requires_grad=True on inputs to enable gradient computation
-#np.exp(-epoch / 100)
+            # np.exp(-epoch / 100)
             # Compute your custom loss
-            loss, ce, kl, gad = LGAD(inputs, targets, outputs, teacher_outputs, temperature=np.exp(-epoch / 100), lambda_GAD=l_GAD,
-                                     lambda_CE=l_CE, lambda_KL=l_KD)
+            loss, ce, kl, gad, grad_ratio = LGAD(inputs, targets, outputs, teacher_outputs,
+                                                 temperature=np.exp(-epoch / 100), lambda_GAD=l_GAD,
+                                                 lambda_CE=l_CE, lambda_KL=l_KD)
             writer.add_scalar('Loss/Cross_Entropy', ce.item(), epoch * len(train_loader) + batch_idx)
             writer.add_scalar('Loss/KL_Divergence', kl.item(), epoch * len(train_loader) + batch_idx)
             writer.add_scalar('Loss/GradientDisparity', gad.item(), epoch * len(train_loader) + batch_idx)
@@ -154,10 +214,11 @@ def knowledge_distillation(distillation_data: torch.Tensor, teacher_model, stude
     writer.flush()
     writer.close()
     if print_functions:
-        plot_networks(teacher_model,student_model,full_distillation_data,device,l_GAD=l_GAD,l_CE=l_CE,l_KD=l_KD,
-                      confidence=confidence)
+        log_networks_to_tensorboard(writer, teacher_model, student_model, full_distillation_data, device, step=epochs,
+                                    l_GAD=l_GAD, l_CE=l_CE, l_KD=l_KD,
+                                    confidence=confidence)
 
-    return loss
+    return loss, grad_ratio
 
 
 if __name__ == "__main__":
