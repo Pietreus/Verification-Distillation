@@ -111,6 +111,11 @@ def disagreement_check(dataset, teacher, student):
     teacher_grads = []
     ratios = []
     difference_ratios = []
+    median_directional = []
+    median_directional_all = []
+    min_directional = []
+    mean_diff_directional = []
+    max_diff_directional = []
 
     for samples, labels in data_loader:
         optimizer.zero_grad()
@@ -130,25 +135,42 @@ def disagreement_check(dataset, teacher, student):
 
         # Computing CE gradient
         LCE = torch.nn.CrossEntropyLoss()
+        # CE_loss_T = LCE(torch.nn.functional.softmax(student_outputs, dim=1), labels)
+        # CE_loss_S = LCE(torch.nn.functional.softmax(teacher_outputs, dim=1), labels)
         CE_loss_T = LCE(student_outputs, labels)
         CE_loss_S = LCE(teacher_outputs, labels)
 
         teacher_grad = torch.autograd.grad(CE_loss_T, samples, retain_graph=True, create_graph=True)[0]
         student_grad = torch.autograd.grad(CE_loss_S, samples, retain_graph=True, create_graph=True)[0]
 
-        teacher_grads.append(torch.norm(teacher_grad))
+        teacher_grads.append(torch.min(torch.abs(teacher_grad)))
         student_grads.append(torch.norm(student_grad))
         ratios.append(torch.norm(student_grad) / torch.norm(teacher_grad))
+
+        # Direction_wise disagreement
+        ratio = torch.abs(student_grad/teacher_grad)
+        bad_ratios = ratio[ratio < 1]
+
+        median_directional.append(bad_ratios.median())
+        median_directional_all.append(ratio.median())
+        min_directional.append(bad_ratios.min())
+        mean_diff_directional.append(torch.mean(teacher_grad - student_grad))
+        max_diff_directional.append(torch.max(teacher_grad - student_grad))
 
         grad_discrepancy = torch.norm(teacher_grad - student_grad)
         grad_discrepancies.append(grad_discrepancy)
 
-    print(torch.max(torch.stack(differences)))  # Function values
-    print(torch.max(torch.stack(grad_discrepancies)))  # Gradient abs difference
-    print(torch.max(torch.stack(teacher_grads)))
-    print(torch.max(torch.stack(student_grads)))
-    print(torch.max(torch.stack(ratios)))  # student_grad/teacher_grad
-    print(torch.max(torch.stack(difference_ratios)))  # ratio of difference in prediction
+    # print(torch.max(torch.stack(differences)))  # Function values
+    # print(torch.max(torch.stack(grad_discrepancies)))  # Gradient abs difference
+    print(torch.min(torch.stack(teacher_grads)))
+    # print(torch.max(torch.stack(student_grads)))
+    # print(torch.max(torch.stack(ratios)))  # student_grad/teacher_grad
+    # print(torch.max(torch.stack(difference_ratios)))  # ratio of difference in prediction
+    print(f"Median ratio directional, for < 1: {torch.median(torch.stack(median_directional))}")
+    print(f"Median ratio directional, for all: {torch.median(torch.stack(median_directional_all))}")
+    print(f"Min ratio directional, for < 1: {torch.min(torch.stack(min_directional))}")
+    print(f"Mean difference directional disagreement: {torch.mean(torch.stack(mean_diff_directional))}")
+    print(f"Max difference directional disagreement: {torch.max(torch.stack(max_diff_directional))}")
 
 
 if __name__ == "__main__":
@@ -159,7 +181,7 @@ if __name__ == "__main__":
     # Train teacher.
     ############################
     csv_file = 'datasets/compas-scores-preprocessed.csv'
-    dataset = CSVDataset(csv_file, transform=ToTensor(), target_size=100, apply_noise=True)
+    dataset = CSVDataset(csv_file, transform=ToTensor(), target_size=100, apply_noise=False)
 
     # Train and validation sets.
     train_size = int(0.8 * len(dataset))
@@ -238,7 +260,7 @@ if __name__ == "__main__":
             teacher_outputs = teacher(inputs)
 
             loss, ce, kl, gad, gad_perc = LGAD(inputs, targets, outputs, teacher_outputs, temperature=1,
-                                               lambda_GAD=l_GAD, lambda_CE=l_CE, lambda_KL=l_KD)
+                                               lambda_GAD=l_GAD, lambda_CE=l_CE, lambda_KL=l_KD, softmax=False)
             writer.add_scalar('Loss/Cross_Entropy', ce.item(), epoch * len(train_loader) + batch_idx)
             writer.add_scalar('Loss/KL_Divergence', kl.item(), epoch * len(train_loader) + batch_idx)
             writer.add_scalar('Loss/GradientDisparity', gad.item(), epoch * len(train_loader) + batch_idx)
@@ -247,6 +269,8 @@ if __name__ == "__main__":
 
             loss.backward()
             optimizer.step()
+
+        # disagreement_check(distillation_data, teacher=teacher, student=student)
     writer.flush()
     writer.close()
 

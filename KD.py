@@ -16,14 +16,18 @@ from torch.utils.tensorboard import SummaryWriter
 writer = SummaryWriter()
 
 def LGAD(x, y_true, y_pred_S, y_pred_T, lambda_CE=1.0, lambda_KL=4.0, lambda_GAD=1.0,
-         temperature=1.0):
+         temperature=1.0, softmax=True):
     LCE = torch.nn.CrossEntropyLoss()
     LKL = torch.nn.KLDivLoss(log_target=True)
-    CE_loss = LCE(torch.nn.functional.softmax(y_pred_S, dim=1), y_true)
+    if softmax:
+        CE_loss = LCE(torch.nn.functional.softmax(y_pred_S, dim=1), y_true)
+        CE_loss_T = LCE(torch.nn.functional.softmax(y_pred_T, dim=1), y_true)
+    else:
+        CE_loss = LCE(y_pred_S, y_true)
+        CE_loss_T = LCE(y_pred_T, y_true)
     KL_loss = temperature ** 2 * LKL(torch.nn.functional.log_softmax(y_pred_S, dim=1),
                                      torch.nn.functional.log_softmax(y_pred_T, dim=1))
 
-    CE_loss_T = LCE(torch.nn.functional.softmax(y_pred_T, dim=1), y_true)
     # CE_loss_T.backward(retain_graph=True)
     teacher_grad = torch.autograd.grad(CE_loss_T, x, retain_graph=True, create_graph=True)[0]
     # CE_loss.backward(retain_graph=True)
