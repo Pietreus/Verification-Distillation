@@ -8,6 +8,7 @@ from tqdm import tqdm
 
 from KD import LGAD
 from torch.utils.tensorboard import SummaryWriter
+
 writer = SummaryWriter()
 
 
@@ -46,88 +47,133 @@ class StudentModel(nn.Module):
         return x
 
 
+def add_uniform_ball_noise(data, radius):
+    n_samples, n_features = data.shape
+    noise = np.random.uniform(-radius, radius, size=(n_samples, n_features))
+    noise = noise / np.linalg.norm(noise, axis=1, keepdims=True) * np.random.uniform(0, radius, size=(n_samples, 1))
+    return data + noise
+
+
+class CSVDataset(Dataset):
+    def __init__(self, csv_file, target_size=None, noise_radius=1, transform=None, apply_noise=False,
+                 one_hot_encode=True):
+        self.data = pd.read_csv(csv_file)
+        self.transform = transform
+
+        # Separate features and labels
+        self.features = self.data.iloc[:, :-1].values.astype(np.float32)
+        self.labels = self.data.iloc[:, -1].values.astype(np.int64)
+
+        if one_hot_encode:
+            self.one_hot_encoder = OneHotEncoder(sparse_output=False)
+            self.labels = self.one_hot_encoder.fit_transform(self.labels.reshape(-1, 1))
+
+        print(f"Number of data points: {self.features.shape[0]}\n")
+
+        # Replicates the data to match target_size, and applies noise to each replica.
+        if apply_noise:
+            original_size = self.features.shape[0]
+            num_replicas = int(np.ceil(target_size / original_size))
+            self.features = np.vstack(
+                [add_uniform_ball_noise(self.features, noise_radius) for _ in range(num_replicas)])
+            self.labels = np.vstack([self.labels for _ in range(num_replicas)])
+            print(f"Number of data points after noise: {self.features.shape[0]}")
+
+            # Exclude original data
+            self.features = self.features[original_size:, :]
+            self.labels = self.labels[original_size:, :]
+
+        if self.transform:
+            self.features = self.transform(self.features)
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        sample = self.features[idx]
+        label = self.labels[idx]
+        return sample, label
+
+
+class ToTensor:
+    def __call__(self, sample):
+        return torch.tensor(sample, dtype=torch.float32)
+
+
+def disagreement_check(dataset, teacher, student):
+
+    data_loader = DataLoader(dataset, batch_size=128)
+    optimizer = optim.Adam(student.parameters(), lr=0.0005)
+
+    differences = []
+    grad_discrepancies = []
+    student_grads = []
+    teacher_grads = []
+    ratios = []
+    difference_ratios = []
+
+    for samples, labels in data_loader:
+        optimizer.zero_grad()
+
+        samples.requires_grad = True
+        student_outputs = student(samples)
+        teacher_outputs = teacher(samples)
+        student_predicted = torch.max(student_outputs.data, 1)[0]
+        teacher_predicted = torch.max(teacher_outputs.data, 1)[0]
+        y_true = torch.max(labels, 1)[1]
+
+        # Max point value disagreement.
+        difference = torch.max(
+            torch.abs(torch.max(student_outputs.data, 1)[0] - torch.max(teacher_outputs.data, 1)[0]))
+        differences.append(difference)
+        difference_ratios.append((student_outputs.data - teacher_outputs.data).max() / student_outputs.data.max())
+
+        # Computing CE gradient
+        LCE = torch.nn.CrossEntropyLoss()
+        CE_loss_T = LCE(student_outputs, labels)
+        CE_loss_S = LCE(teacher_outputs, labels)
+
+        teacher_grad = torch.autograd.grad(CE_loss_T, samples, retain_graph=True, create_graph=True)[0]
+        student_grad = torch.autograd.grad(CE_loss_S, samples, retain_graph=True, create_graph=True)[0]
+
+        teacher_grads.append(torch.norm(teacher_grad))
+        student_grads.append(torch.norm(student_grad))
+        ratios.append(torch.norm(student_grad) / torch.norm(teacher_grad))
+
+        grad_discrepancy = torch.norm(teacher_grad - student_grad)
+        grad_discrepancies.append(grad_discrepancy)
+
+    print(torch.max(torch.stack(differences)))  # Function values
+    print(torch.max(torch.stack(grad_discrepancies)))  # Gradient abs difference
+    print(torch.max(torch.stack(teacher_grads)))
+    print(torch.max(torch.stack(student_grads)))
+    print(torch.max(torch.stack(ratios)))  # student_grad/teacher_grad
+    print(torch.max(torch.stack(difference_ratios)))  # ratio of difference in prediction
+
+
 if __name__ == "__main__":
     torch.manual_seed(42)
     np.random.seed(42)
 
-
-    def add_uniform_ball_noise(data, radius):
-        n_samples, n_features = data.shape
-        noise = np.random.uniform(-radius, radius, size=(n_samples, n_features))
-        noise = noise / np.linalg.norm(noise, axis=1, keepdims=True) * np.random.uniform(0, radius, size=(n_samples, 1))
-        return data + noise
-
+    ############################
     # Train teacher.
-    class CSVDataset(Dataset):
-        def __init__(self, csv_file, target_size=None, noise_radius=1, transform=None, apply_noise=False):
-            self.data = pd.read_csv(csv_file)
-            self.transform = transform
-
-            # Separate features and labels
-            self.features = self.data.iloc[:, :-1].values.astype(np.float32)
-            self.labels = self.data.iloc[:, -1].values.astype(np.int64)
-
-            # One-hot encode the labels
-            self.one_hot_encoder = OneHotEncoder(sparse_output=False)
-            self.labels = self.one_hot_encoder.fit_transform(self.labels.reshape(-1, 1))
-
-            print(f"Number of data points: {self.features.shape[0]}")
-
-            if apply_noise:
-                # Calculate number of replicas needed
-                original_size = self.features.shape[0]
-                num_replicas = int(np.ceil(target_size / original_size))
-
-                # Replicate data with noise
-                self.features = np.vstack([add_uniform_ball_noise(self.features, noise_radius) for _ in range(num_replicas)])
-                self.labels = np.vstack([self.labels for _ in range(num_replicas)])
-                print(f"Number of data points after noise: {self.features.shape[0]}")
-
-                # Exclude original data
-                self.features = self.features[original_size:, :]
-                self.labels = self.labels[original_size:, :]
-
-            # Apply transformations if provided
-            if self.transform:
-                self.features = self.transform(self.features)
-
-        def __len__(self):
-            return len(self.data)
-
-        def __getitem__(self, idx):
-            sample = self.features[idx]
-            label = self.labels[idx]
-            return sample, label
-
-
-    # Define transformations (optional)
-    class ToTensor:
-        def __call__(self, sample):
-            return torch.tensor(sample, dtype=torch.float32)
-
-
-    # Load and preprocess dataset
+    ############################
     csv_file = 'datasets/compas-scores-preprocessed.csv'
-    dataset = CSVDataset(csv_file, transform=ToTensor(), target_size=100, apply_noise=False)
+    dataset = CSVDataset(csv_file, transform=ToTensor(), target_size=100, apply_noise=True)
 
-    # Split into training and validation sets
+    # Train and validation sets.
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
     train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
-
-    # Create DataLoader instances
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 
-
-    # Initialize model, loss function, and optimizer
+    # Initialize.
     input_dim = dataset.features.shape[1]
     num_classes = 3
     teacher = TeacherModel(input_dim, num_classes)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(teacher.parameters(), lr=0.001)
-
-    # Training loop
     num_epochs = 5
 
     for epoch in range(num_epochs):
@@ -146,7 +192,7 @@ if __name__ == "__main__":
 
         print(f"Epoch [{epoch + 1}/{num_epochs}], Loss: {running_loss / len(train_loader):.4f}")
 
-    # Validation (optional)
+    # Validation.
     teacher.eval()
     correct = 0
     total = 0
@@ -159,7 +205,9 @@ if __name__ == "__main__":
 
     print(f'Validation Accuracy: {100 * correct / total:.2f}%')
 
+    ############################
     # Distill student.
+    ############################
 
     student = StudentModel(input_dim, num_classes)
     optimizer = optim.Adam(student.parameters(), lr=0.0005)
@@ -202,8 +250,6 @@ if __name__ == "__main__":
     writer.flush()
     writer.close()
 
-
-
     # Validation (optional)
     student.eval()
     correct = 0
@@ -227,56 +273,4 @@ if __name__ == "__main__":
     torch.save(teacher.state_dict(), f"models/teacher_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.pt")
 
     # Checking for disagreement.
-    def disagreement_check(dataset, teacher, student):
-
-        data_loader = DataLoader(dataset, batch_size=128)
-        optimizer = optim.Adam(student.parameters(), lr=0.0005)
-
-        differences = []
-        grad_discrepancies = []
-        student_grads = []
-        teacher_grads = []
-        ratios = []
-        difference_ratios = []
-
-        for samples, labels in data_loader:
-            optimizer.zero_grad()
-
-            samples.requires_grad = True
-            student_outputs = student(samples)
-            teacher_outputs = teacher(samples)
-            student_predicted = torch.max(student_outputs.data, 1)[0]
-            teacher_predicted = torch.max(teacher_outputs.data, 1)[0]
-            y_true = torch.max(labels, 1)[1]
-
-            # Max point value disagreement.
-            difference = torch.max(torch.abs(torch.max(student_outputs.data, 1)[0] - torch.max(teacher_outputs.data, 1)[0]))
-            differences.append(difference)
-            difference_ratios.append((student_outputs.data - teacher_outputs.data).max()/student_outputs.data.max())
-
-            # Computing CE gradient
-            LCE = torch.nn.CrossEntropyLoss()
-            CE_loss_T = LCE(student_outputs, labels)
-            CE_loss_S = LCE(teacher_outputs, labels)
-
-            teacher_grad = torch.autograd.grad(CE_loss_T, samples, retain_graph=True, create_graph=True)[0]
-            student_grad = torch.autograd.grad(CE_loss_S, samples, retain_graph=True, create_graph=True)[0]
-
-            teacher_grads.append(torch.norm(teacher_grad))
-            student_grads.append(torch.norm(student_grad))
-            ratios.append(torch.norm(student_grad)/torch.norm(teacher_grad))
-
-            grad_discrepancy = torch.norm(teacher_grad-student_grad)
-            grad_discrepancies.append(grad_discrepancy)
-
-        print(torch.max(torch.stack(differences)))  # Function values
-        print(torch.max(torch.stack(grad_discrepancies)))  # Gradient abs difference
-        print(torch.max(torch.stack(teacher_grads)))
-        print(torch.max(torch.stack(student_grads)))
-        print(torch.max(torch.stack(ratios)))  # student_grad/teacher_grad
-        print(torch.max(torch.stack(difference_ratios)))  # ratio of difference in prediction
-
     disagreement_check(distillation_data, teacher=teacher, student=student)
-
-
-
