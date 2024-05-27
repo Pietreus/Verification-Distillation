@@ -32,7 +32,7 @@ data
 ```{r}
 
 
-colors <- c("blue", "cyan", "green", "yellow", "red") # You can adjust the colors
+colors <- c("#3B9AB2", "#78B7C5", "#EBCC2A", "#E1AF00", "#F21A00")
 values <- c(0.0, 0.1, 0.3, 0.6, 1) # Adjust values to match your data range
 
 
@@ -127,5 +127,37 @@ ggplot(data) +
         theme_minimal() +
         theme(legend.position = "bottom")
 
+
+```
+
+```{r}
+
+data_multicat <- data %>% mutate(robustness = factor(ifelse(teacher_robust,
+                                                                    ifelse(student_robust,"both robust","only teacher"),
+                                                            ifelse(student_robust,"only student", "both not robust"))))
+
+ggplot(data_multicat) +
+        geom_point(aes(x = frequency,
+                         y = factor(confidence),
+                         color = grad_ratio,
+                         shape = robustness), size = 4, stroke = 2) +
+        scale_shape_manual(values = c(6,2,4,14)) + # Define shapes for points
+        labs(shape = "Teacher robust", size = "Student robust", x = "steepness of decision boundary",
+                y = "prediction confidence threshold", title = "Student/Teacher robustness vs Teacher steepness") +
+        # scale_x_log10() +
+        scale_x_continuous(limits= c(0,100)) +
+        scale_color_gradientn(
+          colours = colors,
+          values = rescale(values, to = c(0, 1)),
+          limits = c(0, 1), # Adjust according to your data range
+          # breaks = c(0, 0.3, 0.6, 5,12), # Adjust breaks according to your data range
+          guide = "colorbar", # Show color bar
+          na.value = "#F21A00", # Color for NA values
+          name = "Gradient Error" # Color bar label
+          ) +
+        theme_minimal() +
+        theme(legend.position = "bottom")
+
+data_multicat$robustness
 
 ```
