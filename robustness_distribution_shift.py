@@ -4,7 +4,6 @@ import socket
 from datetime import datetime
 import concurrent.futures
 
-
 import torch
 import torch.multiprocessing as mp
 import numpy as np
@@ -30,7 +29,7 @@ class StudentModel(nn.Module):
 
 
 def high_confidence_data(synthetic_data, model, confidence):
-    mask = (torch.abs(torch.softmax(model(synthetic_data), dim=1) - 0.5) * 2 > confidence)[:, 0]
+    mask = (torch.softmax(model(synthetic_data), dim=1).max(dim=1).values > confidence)
     return synthetic_data[mask, :]
 
 
@@ -39,14 +38,14 @@ def all_high_confidence_data_delta_robust(synthetic_data, model, confidence, del
     if len(hi_conf_data) == 0:
         return np.nan
 
-    return np.all(np.abs(np.sum(hi_conf_data.numpy(), axis=1)) > delta)
+    return np.all(np.abs(np.sum(hi_conf_data.detach().numpy(), axis=1)) > delta)
 
 
 def all_high_confidence_data_robustness_radius(synthetic_data, model, confidence):
     hi_conf_data = high_confidence_data(synthetic_data, model, confidence)
     if len(hi_conf_data) == 0:
         return np.nan
-    return np.min(np.abs(np.sum(hi_conf_data.numpy(), axis=1)))
+    return np.min(np.abs(np.sum(hi_conf_data.detach().numpy(), axis=1)))
 
 
 def generate_normal_matrix(center, variance, shape, support_min, support_max, distance_cutoff=2):
@@ -98,13 +97,6 @@ def generate_normal_matrix(center, variance, shape, support_min, support_max, di
     return matrix
 
 
-
-
-
-
-
-
-
 if __name__ == "__main__":
     torch.manual_seed(42)
     np.random.seed(42)
@@ -130,8 +122,10 @@ if __name__ == "__main__":
     csv_file = os.path.join("runs", f"{current_time}_{hostname}", "summary.csv")
     data = []
     processes = []
-    confidences = [0.5, 0.6, 0.7]
-    frequencies = [1, 2, 3, 4, 5, 7, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 75, 80, 85, 90, 95, 100, 150, 200]
+    confidences = [0.7, 0.75, 0.8, 0.85]
+    # frequencies = [1]
+    frequencies = [1, 2, 3, 4, 5, 7, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]
+    # frequencies = [1, 5, 10, 50, 75, 100]
     for frequency in frequencies:
         for confidence in confidences:
             student = StudentModel(dim)
@@ -143,10 +137,36 @@ if __name__ == "__main__":
             # print(f"teacher frequency: {frequency}  "
             #       f"teacher {delta_radius}-robustness: {mock_teacher.data_robustness(synthetic_data, delta_radius):0.3f}")
 
-            loss, grad_ratio = knowledge_distillation(synthetic_data, mock_teacher, student, batch_size=1000, epochs=20,
-                                                      print_functions=True, device=device,
-                                                      l_GAD=l_GAD, l_CE=l_CE, l_KD=l_KD,
-                                                      confidence=confidence, teacher_freq=frequency)
+            knowledge_distillation(synthetic_data, mock_teacher, student, batch_size=1000, epochs=20,
+                                   print_functions=True, device=device,
+                                   l_GAD=l_GAD, l_CE=l_CE, l_KD=l_KD,
+                                   confidence=confidence, teacher_freq=frequency)
+            synth_data = high_confidence_data(synthetic_data, student, confidence)
+            synth_data.requires_grad = True
+            student_pred = student(synth_data)
+            teacher_pred = mock_teacher(synth_data)
+            synthetic_labels = torch.eye(2).to(device)[torch.argmax(teacher_pred, dim=1)]
+
+            LCE = torch.nn.CrossEntropyLoss(reduction="mean")
+            CE_loss = LCE(torch.nn.functional.softmax(student_pred, dim=1), synthetic_labels)
+            CE_loss_T = LCE(torch.nn.functional.softmax(teacher_pred, dim=1), synthetic_labels)
+            teacher_grad = torch.autograd.grad(CE_loss_T, synth_data, retain_graph=True, create_graph=True)[0]
+            student_grad = torch.autograd.grad(CE_loss, synth_data, retain_graph=True, create_graph=True)[0]
+
+            # grad_discrepancy = torch.norm(teacher_grad - student_grad, dim=1)
+            # perc_grad_discrepancy = grad_discrepancy / torch.norm(student_grad, dim=1)
+            grad_ratio = (torch.norm(student_grad, dim=1)+1e-6) / (torch.norm(teacher_grad, dim=1)+1e-6)
+
+            signed_confidence_disparity = torch.max(torch.nn.functional.softmax(student_pred, dim=1),
+                                                    dim=1).values - torch.max(
+                torch.nn.functional.softmax(teacher_pred, dim=1), dim=1).values
+            # i want to calculate the mean and avg gradient error here.
+            # the mean i can get for the last training epoch, which would be a little bit of a hack
+            # the better way would be to just collect them in an additional pass
+            # raw_prediction_diff = (student_pred - teacher_pred).abs()
+            softmax_prediction_diff = (
+                    torch.softmax(student_pred, dim=1).max(dim=1).values - torch.softmax(teacher_pred, dim=1).max(dim=1).values)
+
             teacher_robust = all_high_confidence_data_delta_robust(synthetic_data, mock_teacher, confidence,
                                                                    delta_radius)
             teacher_robustness_radius = all_high_confidence_data_robustness_radius(synthetic_data, mock_teacher,
@@ -160,14 +180,17 @@ if __name__ == "__main__":
                   f"({teacher_robustness_radius:.6f})"
                   f" student robust: {student_robust}"
                   f"({student_robustness_radius:.6f})"
-                  f" gradient ratio: {grad_ratio}")
+                  f" robustness ratio (t/s) {1/student_robustness_radius*teacher_robustness_radius:.6f}"
+                  f" gradient ratio (s/t) (mean/min): {grad_ratio.mean():.6f}/{grad_ratio.min():.6f}"
+                  f" confidence diffs (s-t) (mean/min): {softmax_prediction_diff.mean():.6f}/{softmax_prediction_diff.min():.6f}")
             data.append((confidence, frequency, delta_radius, variance, l_GAD, l_CE, l_KD, dim, n,
-                       teacher_robust, teacher_robustness_radius, student_robust, student_robustness_radius,
-                       grad_ratio.detach().numpy()))
+                         teacher_robust, teacher_robustness_radius, student_robust, student_robustness_radius,
+                         grad_ratio.mean().detach().numpy(), grad_ratio.min().detach().numpy(), softmax_prediction_diff.mean().detach().numpy(), softmax_prediction_diff.min().detach().numpy()))
             # writer = SummaryWriter()
 
     header = ["confidence", "frequency", "delta_radius", "variance", "l_GAD", "l_CE", "l_KD", "dim", "n",
-              "teacher_robust", "teacher_robustness_radius", "student_robust", "student_robustness_radius", "grad_ratio"]
+              "teacher_robust", "teacher_robustness_radius", "student_robust", "student_robustness_radius",
+              "mean_grad_ratio", "min_grad_ratio", "mean_confidence_diffs", "min_confidence_diffs"]
     with open(csv_file, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(header)

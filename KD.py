@@ -45,6 +45,9 @@ def LGAD(x, y_true, y_pred_S, y_pred_T, lambda_CE=1.0, lambda_KL=4.0, lambda_GAD
     return lambda_CE * CE_loss + lambda_KL * KL_loss + lambda_GAD * grad_discrepancy, CE_loss, KL_loss, grad_discrepancy, perc_grad_discrepancy
 
 
+
+
+
 def save_tensors_for_later(teacher_outputs, student_outputs, synthetic_data, synthetic_labels,
                            high_confidence_teacher_mask, high_confidence_student_mask, log_dir, step):
     # Save tensors to disk
@@ -160,11 +163,6 @@ def plot_networks(teacher_model, student_model, synthetic_data, device, save=Tru
         writer.add_image('Model Outputs', image, 0)
 
 
-def high_confidence_data(synthetic_data, model, confidence):
-    mask = torch.flatten(torch.abs(model(synthetic_data)[:, 0]) > confidence, 0)
-    return synthetic_data[mask]
-
-
 def knowledge_distillation(distillation_data: torch.Tensor, teacher_model, student_model, batch_size, epochs, l_CE,
                            l_KD, l_GAD,
                            print_functions=False, device="cpu", confidence=0.5, teacher_freq=0.5):
@@ -187,7 +185,7 @@ def knowledge_distillation(distillation_data: torch.Tensor, teacher_model, stude
 
     # Create DataLoader
     for epoch in tqdm(range(epochs), ncols=50 + epochs):
-    # for epoch in range(epochs):
+        # for epoch in range(epochs):
         train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
         for batch_idx, (inputs, targets) in enumerate(train_loader):
@@ -211,6 +209,7 @@ def knowledge_distillation(distillation_data: torch.Tensor, teacher_model, stude
 
             loss.backward()
             optimizer.step()
+
     writer.flush()
     writer.close()
     if print_functions:
@@ -218,7 +217,8 @@ def knowledge_distillation(distillation_data: torch.Tensor, teacher_model, stude
                                     l_GAD=l_GAD, l_CE=l_CE, l_KD=l_KD,
                                     confidence=confidence)
 
-    return loss, grad_ratio
+    # return (torch.mean(grads).detach().numpy(), torch.min(grads).detach().numpy(),
+    #         softmax_prediction_diff.mean().detach().numpy(), softmax_prediction_diff.max().detach().numpy())
 
 
 if __name__ == "__main__":

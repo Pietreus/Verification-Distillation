@@ -22,10 +22,12 @@ library(tidyverse)
 
 ```{r data}
 
-data <- read.csv("runs/May26_21-12-59_thinkpad/summary.csv")
+data <- read.csv("runs/May28_17-05-28_thinkpad/summary.csv")
 
-data
+data %>% mutate(max_grad_ratio = as.numeric(max_grad_ratio))
 
+
+# sort(data$mean_grad_ratio)
 
 ```
 
@@ -70,7 +72,7 @@ library(scales)
 ggplot(data) +
         geom_point(aes(x = frequency,
                          y = confidence,
-                         color = grad_ratio,
+                         color = min_grad_ratio,
                          size = 1/student_robustness_radius*teacher_robustness_radius)) +
         scale_shape_manual(values = c(1, 16)) + # Define shapes for points
         scale_x_log10() +
@@ -78,7 +80,7 @@ ggplot(data) +
         scale_color_gradientn(
           colours = colors,
           values = rescale(values, to = c(0, 1)),
-          limits = c(0, 12), # Adjust according to your data range
+          limits = c(0, 5), # Adjust according to your data range
           # breaks = c(0, 0.3, 0.6, 5,12), # Adjust breaks according to your data range
           guide = "colorbar", # Show color bar
           na.value = "grey50", # Color for NA values
@@ -99,13 +101,6 @@ ggplot(data) +
 ```
 
 ```{r}
-
-
-
-
-
-
-
 
 ggplot(data) +
         geom_point(aes(x = frequency,
@@ -136,27 +131,55 @@ data_multicat <- data %>% mutate(robustness = factor(ifelse(teacher_robust,
                                                                     ifelse(student_robust,"both robust","only teacher"),
                                                             ifelse(student_robust,"only student", "both not robust"))))
 
-ggplot(data_multicat) +
+library(viridis)
+
+
+ggplot(data_multicat%>% filter(!(frequency %in% c(2,3,4,7)))) +
         geom_point(aes(x = frequency,
                          y = factor(confidence),
-                         color = grad_ratio,
-                         shape = robustness), size = 4, stroke = 2) +
-        scale_shape_manual(values = c(6,2,4,14)) + # Define shapes for points
+                         shape = min_confidence_diffs > 0,
+                         color = robustness), size = 4, stroke = 2) +
+        scale_shape_manual(values = c(4,2,6,2,4,14)) + # Define shapes for points
         labs(shape = "Teacher robust", size = "Student robust", x = "steepness of decision boundary",
                 y = "prediction confidence threshold", title = "Student/Teacher robustness vs Teacher steepness") +
         # scale_x_log10() +
         scale_x_continuous(limits= c(0,100)) +
-        scale_color_gradientn(
-          colours = colors,
-          values = rescale(values, to = c(0, 1)),
-          limits = c(0, 1), # Adjust according to your data range
-          # breaks = c(0, 0.3, 0.6, 5,12), # Adjust breaks according to your data range
-          guide = "colorbar", # Show color bar
-          na.value = "#F21A00", # Color for NA values
-          name = "Gradient Error" # Color bar label
-          ) +
+        scale_color_manual(values= )
+        # scale_color_gradientn(
+        #   colours = colors,
+        #   values = rescale(values, to = c(0, 1)),
+        #   limits = c(0.8, 1.01), # Adjust according to your data range
+        #   # breaks = c(0, 0.3, 0.6, 5,12), # Adjust breaks according to your data range
+        #   guide = "colorbar", # Show color bar
+        #   na.value = "blue", # Color for NA values
+        #   name = "Gradient Error" # Color bar label
+        #   ) +
+        theme_minimal() +
+        scale_color_viridis(discrete = TRUE) +
+        theme(legend.position = "bottom")
+
+ggplot(data_multicat %>% filter(!(frequency %in% c(2,3,4,7)))) +
+        geom_point(aes(x = frequency,
+                         y = factor(confidence),
+                         color = min_confidence_diffs > 0,
+                         shape = student_robustness_radius  < teacher_robustness_radius ), size = 4, stroke = 2) +
+        scale_shape_manual(values = c(4,2,6,14,2,4,14)) + # Define shapes for points
+        labs(shape = "Teacher robust", size = "Student robust", x = "steepness of decision boundary",
+                y = "prediction confidence threshold", title = "Student/Teacher robustness vs Teacher steepness") +
+        # scale_x_log10() +
+        scale_x_continuous(limits= c(0,100)) +
+        # scale_color_gradientn(
+        #   colours = colors,
+        #   values = rescale(values, to = c(0, 1)),
+        #   limits = c(0.8, 1.01), # Adjust according to your data range
+        #   # breaks = c(0, 0.3, 0.6, 5,12), # Adjust breaks according to your data range
+        #   guide = "colorbar", # Show color bar
+        #   na.value = "blue", # Color for NA values
+        #   name = "Gradient Error" # Color bar label
+        #   ) +
         theme_minimal() +
         theme(legend.position = "bottom")
+
 
 data_multicat$robustness
 
