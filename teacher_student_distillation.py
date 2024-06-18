@@ -89,7 +89,8 @@ class CSVDataset(Dataset):
             self.features = self.transform(self.features)
 
     def __len__(self):
-        return len(self.data)
+        # return len(self.data)
+        return self.features.shape[0]
 
     def __getitem__(self, idx):
         sample = self.features[idx]
@@ -239,7 +240,7 @@ if __name__ == "__main__":
     # Knowledge distillation.
     print("Performing Knowledge Distillation")
     noise_radius = 1
-    distillation_data = CSVDataset(csv_file, transform=ToTensor(), target_size=10e7,
+    distillation_data = CSVDataset(csv_file, transform=ToTensor(), target_size=10e4,
                                    apply_noise=True, noise_radius=noise_radius)
 
     l_GAD = 50
