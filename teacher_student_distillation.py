@@ -9,6 +9,8 @@ from tqdm import tqdm
 from KD import LGAD
 from torch.utils.tensorboard import SummaryWriter
 
+from nnsaver import nnet_exporter
+
 writer = SummaryWriter()
 
 
@@ -295,6 +297,9 @@ if __name__ == "__main__":
     torch.onnx.export(teacher, args=(val_dataset[0][0]),
                       f=f"models/teacher_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.onnx")
     torch.save(teacher.state_dict(), f"models/teacher_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.pt")
+
+    nnet_exporter(student, f"models/nnet/student_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.nnet", dataset)
+    nnet_exporter(teacher, f"models/nnet/teacher_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.nnet", dataset)
 
     # Checking for disagreement.
     disagreement_check(distillation_data, teacher=teacher, student=student)
