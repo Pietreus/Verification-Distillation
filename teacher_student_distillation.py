@@ -103,25 +103,26 @@ class ToTensor:
         return torch.tensor(sample, dtype=torch.float32)
 
 
-def disagreement_check(dataset, teacher, student):
+def disagreement_check(dataset, teacher, student, softmax=True):
 
     data_loader = DataLoader(dataset, batch_size=128)
     optimizer = optim.Adam(student.parameters(), lr=0.0005)
+    optimizer_2 = optim.Adam(teacher.parameters(), lr=0.0005)
 
     differences = []
-    grad_discrepancies = []
-    student_grads = []
-    teacher_grads = []
-    ratios = []
+    min_normed_ratios = []
     difference_ratios = []
-    median_directional = []
-    median_directional_all = []
-    min_directional = []
-    mean_diff_directional = []
-    max_diff_directional = []
+    min_ratios = []
+    median_normed_ratios = []
+    mean_normed_ratios = []
+    teacher_grads_norms = []
+    student_grads_norms = []
+    signed_difference_list = []
+    sanity_signed_difference_list = []
 
     for samples, labels in data_loader:
         optimizer.zero_grad()
+        optimizer_2.zero_grad()
 
         samples.requires_grad = True
         student_outputs = student(samples)
@@ -135,45 +136,42 @@ def disagreement_check(dataset, teacher, student):
             torch.abs(torch.max(student_outputs.data, 1)[0] - torch.max(teacher_outputs.data, 1)[0]))
         differences.append(difference)
         difference_ratios.append((student_outputs.data - teacher_outputs.data).max() / student_outputs.data.max())
+        signed_difference = torch.max(torch.nn.functional.softmax(student_outputs, dim=1), dim=1).values - torch.max(torch.nn.functional.softmax(teacher_outputs, dim=1), dim=1).values
+        sanity_signed_difference = torch.max(torch.nn.functional.softmax(teacher_outputs, dim=1), dim=1).values - torch.max(torch.nn.functional.softmax(student_outputs, dim=1), dim=1).values
+        signed_difference_list.append(signed_difference.min())
+        sanity_signed_difference_list.append(sanity_signed_difference.max())
 
         # Computing CE gradient
         LCE = torch.nn.CrossEntropyLoss()
-        # CE_loss_T = LCE(torch.nn.functional.softmax(student_outputs, dim=1), labels)
-        # CE_loss_S = LCE(torch.nn.functional.softmax(teacher_outputs, dim=1), labels)
-        CE_loss_T = LCE(student_outputs, labels)
-        CE_loss_S = LCE(teacher_outputs, labels)
+        if softmax:
+            CE_loss_T = LCE(torch.nn.functional.softmax(student_outputs, dim=1), labels)
+            CE_loss_S = LCE(torch.nn.functional.softmax(teacher_outputs, dim=1), labels)
+        else:
+            CE_loss_T = LCE(student_outputs, labels)
+            CE_loss_S = LCE(teacher_outputs, labels)
 
         teacher_grad = torch.autograd.grad(CE_loss_T, samples, retain_graph=True, create_graph=True)[0]
         student_grad = torch.autograd.grad(CE_loss_S, samples, retain_graph=True, create_graph=True)[0]
 
-        teacher_grads.append(torch.min(torch.abs(teacher_grad)))
-        student_grads.append(torch.norm(student_grad))
-        ratios.append(torch.norm(student_grad) / torch.norm(teacher_grad))
+        # Gradient norms.
+        teacher_grad_norm = torch.norm(teacher_grad, dim=1)
+        student_grad_norm = torch.norm(student_grad, dim=1)
+        teacher_grads_norms.append(teacher_grad_norm)
+        student_grads_norms.append(student_grad_norm)
 
-        # Direction_wise disagreement
-        ratio = torch.abs(student_grad/teacher_grad)
-        bad_ratios = ratio[ratio < 1]
+        # Gradient ratios.
+        normed_ratio = student_grad_norm/teacher_grad_norm
+        min_normed_ratios.append(normed_ratio.min())
+        median_normed_ratios.append(normed_ratio.median())
+        mean_normed_ratios.append(normed_ratio.mean())
 
-        median_directional.append(bad_ratios.median())
-        median_directional_all.append(ratio.median())
-        min_directional.append(bad_ratios.min())
-        mean_diff_directional.append(torch.mean(teacher_grad - student_grad))
-        max_diff_directional.append(torch.max(teacher_grad - student_grad))
-
-        grad_discrepancy = torch.norm(teacher_grad - student_grad)
-        grad_discrepancies.append(grad_discrepancy)
-
-    # print(torch.max(torch.stack(differences)))  # Function values
-    # print(torch.max(torch.stack(grad_discrepancies)))  # Gradient abs difference
-    print(torch.min(torch.stack(teacher_grads)))
-    # print(torch.max(torch.stack(student_grads)))
-    # print(torch.max(torch.stack(ratios)))  # student_grad/teacher_grad
-    # print(torch.max(torch.stack(difference_ratios)))  # ratio of difference in prediction
-    print(f"Median ratio directional, for < 1: {torch.median(torch.stack(median_directional))}")
-    print(f"Median ratio directional, for all: {torch.median(torch.stack(median_directional_all))}")
-    print(f"Min ratio directional, for < 1: {torch.min(torch.stack(min_directional))}")
-    print(f"Mean difference directional disagreement: {torch.mean(torch.stack(mean_diff_directional))}")
-    print(f"Max difference directional disagreement: {torch.max(torch.stack(max_diff_directional))}")
+    print(f"Min ratio of norms,: {torch.min(torch.stack(min_normed_ratios))}")
+    print(f"Median ratio of norms: {torch.median(torch.stack(median_normed_ratios))}")
+    print(f"Mean ratio of norms: {torch.mean(torch.stack(mean_normed_ratios))}")
+    # print(f"Differences: {torch.max(torch.stack(differences))}")
+    print(f"Signed (minimum) difference: {torch.min(torch.stack(signed_difference_list))}")
+    print(f"Signed (minimum) difference: {torch.max(torch.stack(sanity_signed_difference_list))}")
+    # print(f"Signed (average) difference: {torch.mean(torch.stack(signed_difference_list))}")
 
 
 if __name__ == "__main__":
@@ -183,8 +181,11 @@ if __name__ == "__main__":
     ############################
     # Train teacher.
     ############################
-    csv_file = 'datasets/compas-scores-preprocessed.csv'
+    # csv_file = 'datasets/compas-scores-preprocessed.csv'
+    csv_file = 'datasets/german-preprocessed.csv'
     dataset = CSVDataset(csv_file, transform=ToTensor(), target_size=100, apply_noise=False)
+    # num_classes = 2
+    num_classes = 2
 
     # Train and validation sets.
     train_size = int(0.8 * len(dataset))
@@ -195,11 +196,12 @@ if __name__ == "__main__":
 
     # Initialize.
     input_dim = dataset.features.shape[1]
-    num_classes = 3
+    print(input_dim)
     teacher = TeacherModel(input_dim, num_classes)
+    print(teacher)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(teacher.parameters(), lr=0.001)
-    num_epochs = 5
+    optimizer = optim.Adam(teacher.parameters(), lr=0.0001) # 0.001 for 5 epochs for compass, 0.0001 for 2 epochs for german
+    num_epochs = 2
 
     for epoch in range(num_epochs):
         teacher.train()
@@ -235,6 +237,8 @@ if __name__ == "__main__":
     ############################
 
     student = StudentModel(input_dim, num_classes)
+    print(student)
+    # optimizer = optim.Adam(student.parameters(), lr=0.0005) % for compass
     optimizer = optim.Adam(student.parameters(), lr=0.0005)
 
     # Knowledge distillation.
@@ -243,11 +247,11 @@ if __name__ == "__main__":
     distillation_data = CSVDataset(csv_file, transform=ToTensor(), target_size=10e4,
                                    apply_noise=True, noise_radius=noise_radius)
 
-    l_GAD = 50
+    l_GAD = 5000
     l_CE = 2
     l_KD = 5
 
-    epochs = 50
+    epochs = 100
 
     for epoch in tqdm(range(epochs)):
 
@@ -263,7 +267,7 @@ if __name__ == "__main__":
             teacher_outputs = teacher(inputs)
 
             loss, ce, kl, gad, gad_perc = LGAD(inputs, targets, outputs, teacher_outputs, temperature=1,
-                                               lambda_GAD=l_GAD, lambda_CE=l_CE, lambda_KL=l_KD, softmax=False)
+                                               lambda_GAD=l_GAD, lambda_CE=l_CE, lambda_KL=l_KD, softmax=True)
             writer.add_scalar('Loss/Cross_Entropy', ce.item(), epoch * len(train_loader) + batch_idx)
             writer.add_scalar('Loss/KL_Divergence', kl.item(), epoch * len(train_loader) + batch_idx)
             writer.add_scalar('Loss/GradientDisparity', gad.item(), epoch * len(train_loader) + batch_idx)
