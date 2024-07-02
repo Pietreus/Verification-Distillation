@@ -133,18 +133,43 @@ data_multicat <- data %>% mutate(robustness = factor(ifelse(teacher_robust,
 
 library(viridis)
 
+# Define the custom color map
+custom_colors <- c("both robust" = "#00C853",
+                   "both not robust" = "#2979FF",
+                   "only teacher" = "#FF9100",
+                   "only student" = "#D50000")
 
 ggplot(data_multicat%>% filter(!(frequency %in% c(2,3,4,7)))) +
         geom_point(aes(x = frequency,
                          y = factor(confidence),
+                         color = factor(min_confidence_diffs > 0, levels = c(TRUE, FALSE)),
+                         shape = factor(robustness, levels = c("both robust","only student","only teacher","both not robust")))
+            , size = 4, stroke = 2) +
+    scale_color_manual(values= c("#1E88E5", "#D81B60")) +
+    scale_shape_manual(values = c(2,4,14,6)) +
+    labs(shape = "Robustness", color = "Distillation Successful", x = "Teacher Gradient at Decision Boundary",
+                 y = "Prediction Confidence Threshold") +#title = "Student/Teacher Robustness on Synthetic Data"
+    scale_x_continuous(limits= c(0,100)) +
+        theme_minimal() +
+        theme(legend.position = "bottom", text = element_text(size = 18),
+              legend.title = element_text(size = 24), legend.spacing = unit(1, "cm")  )
+
+```
+
+
+```{r}
+ggplot(data_multicat%>% filter(!(frequency %in% c(2,3,4,7)))) +
+        geom_point(aes(x = frequency,
+                         y = factor(confidence),
                          shape = min_confidence_diffs > 0,
-                         color = robustness), size = 4, stroke = 2) +
-        scale_shape_manual(values = c(4,2,6,2,4,14)) + # Define shapes for points
-        labs(shape = "Teacher robust", size = "Student robust", x = "steepness of decision boundary",
+                         color = factor(robustness, levels = c("both robust","only student","only teacher","both not robust")))
+            , size = 4, stroke = 2) +
+        scale_shape_manual(values = c(6,2,4,14)) + # Define shapes for points
+        labs(shape = "Robustness", color = "Student more confident than teacher", x = "steepness of decision boundary",
                 y = "prediction confidence threshold", title = "Student/Teacher robustness vs Teacher steepness") +
         # scale_x_log10() +
         scale_x_continuous(limits= c(0,100)) +
-        scale_color_manual(values= )
+        scale_color_manual(values= custom_colors) +
         # scale_color_gradientn(
         #   colours = colors,
         #   values = rescale(values, to = c(0, 1)),
@@ -155,7 +180,7 @@ ggplot(data_multicat%>% filter(!(frequency %in% c(2,3,4,7)))) +
         #   name = "Gradient Error" # Color bar label
         #   ) +
         theme_minimal() +
-        scale_color_viridis(discrete = TRUE) +
+        # scale_color_viridis(discrete = TRUE) +
         theme(legend.position = "bottom")
 
 ggplot(data_multicat %>% filter(!(frequency %in% c(2,3,4,7)))) +

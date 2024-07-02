@@ -11,14 +11,15 @@ from torch import nn
 
 from KD import knowledge_distillation
 from RobustMockTeacher import MockNeuralNetwork
+from Utils.nnet_exporter import nnet_exporter
 
 
 class StudentModel(nn.Module):
     def __init__(self, input_dim):
         super(StudentModel, self).__init__()
-        self.fc1 = nn.Linear(input_dim, 10)
-        self.fc2 = nn.Linear(10, 10)
-        self.fc3 = nn.Linear(10, 2)
+        self.fc1 = nn.Linear(input_dim, 5)
+        self.fc2 = nn.Linear(5, 5)
+        self.fc3 = nn.Linear(5, 2)
         self.relu = nn.ReLU()
 
     def forward(self, x):
@@ -147,6 +148,7 @@ if __name__ == "__main__":
             teacher_pred = mock_teacher(synth_data)
             synthetic_labels = torch.eye(2).to(device)[torch.argmax(teacher_pred, dim=1)]
 
+
             LCE = torch.nn.CrossEntropyLoss(reduction="mean")
             CE_loss = LCE(torch.nn.functional.softmax(student_pred, dim=1), synthetic_labels)
             CE_loss_T = LCE(torch.nn.functional.softmax(teacher_pred, dim=1), synthetic_labels)
@@ -186,6 +188,17 @@ if __name__ == "__main__":
             data.append((confidence, frequency, delta_radius, variance, l_GAD, l_CE, l_KD, dim, n,
                          teacher_robust, teacher_robustness_radius, student_robust, student_robustness_radius,
                          grad_ratio.mean().detach().numpy(), grad_ratio.min().detach().numpy(), softmax_prediction_diff.mean().detach().numpy(), softmax_prediction_diff.min().detach().numpy()))
+
+            nnet_exporter(student,
+                          os.path.join("runs", f"{current_time}_{hostname}",
+                                       f"student_{frequency}_"
+                                       f"confidence_{confidence}_"
+                                       f"teacherRadius_{teacher_robustness_radius}.nnet"),
+                          synthetic_data,
+                          student_pred.mean(),
+                          student_pred.max() - student_pred.min())
+
+
             # writer = SummaryWriter()
 
     header = ["confidence", "frequency", "delta_radius", "variance", "l_GAD", "l_CE", "l_KD", "dim", "n",

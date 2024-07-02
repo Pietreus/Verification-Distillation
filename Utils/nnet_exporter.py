@@ -39,20 +39,20 @@ def nnet_exporter(model: torch.nn.Module, file, inputs: torch.tensor,  out_mean:
         # 2: Four values: Number of layers, number of inputs, number of outputs, and maximum layer size
         f.write(f"{len(weights)}, "
                         f"{weights[0].shape[1]}, "
-                        f"{weights[-1].shape[1]}, "
+                        f"{weights[-1].shape[0]}, "
                         f"{max([layer.shape[1] for layer in weights])}\n")
         # 3: A sequence of values describing the network layer sizes. Begin with the input size, then the size of the first layer, second layer, and so on until the output layer size
         f.write(str(weights[0].shape[1]) + ", " + ", ".join([str(layer.shape[0]) for layer in weights]) +"\n")
         # 4: A flag that is no longer used, can be ignored
         f.write("0\n")
         # 5: Minimum values of inputs (used to keep inputs within expected range)
-        f.write(f"{", ".join([str(inp.item()) for inp in inputs.min(dim=1).values])}\n")
+        f.write(f"{", ".join([str(inp.item()) for inp in inputs.min(dim=0).values])}\n")
         # 6: Maximum values of inputs (used to keep inputs within expected range)
-        f.write(f"{", ".join([str(inp.item()) for inp in inputs.max(dim=1).values])}\n")
+        f.write(f"{", ".join([str(inp.item()) for inp in inputs.max(dim=0).values])}\n")
         # 7: Mean values of inputs and one value for all outputs (used for normalization)
-        f.write(f"{", ".join([str(inp.item()) for inp in inputs.mean(dim=1)])}" + f", {out_mean}\n")
+        f.write(f"{", ".join([str(inp.item()) for inp in inputs.mean(dim=0)])}" + f", {str(out_mean.item())}\n")
         # 8: Range values of inputs and one value for all outputs (used for normalization)
-        f.write(f"{", ".join([str(inp.item()) for inp in (inputs.max(dim=1).values - inputs.min(dim=1).values)])}" + f", {out_range}\n")
+        f.write(f"{", ".join([str(inp.item()) for inp in (inputs.max(dim=0).values - inputs.min(dim=0).values)])}" + f", {str(out_range.item())}\n")
         # 9+: Begin defining the weight matrix for the first layer, followed by the bias vector.
         # The weights and biases for the second layer follow after, until the weights and biases for the output layer are defined.
         for weight, bias in zip(weights, biases):
