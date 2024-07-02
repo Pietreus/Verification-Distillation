@@ -4,6 +4,7 @@ from torch import nn
 
 from KD import knowledge_distillation
 from RobustMockTeacher import MockNeuralNetwork
+from Utils.nnet_exporter import nnet_exporter
 
 
 class StudentModel(nn.Module):
@@ -12,8 +13,6 @@ class StudentModel(nn.Module):
         self.fc1 = nn.Linear(input_dim, 3)
         self.fc2 = nn.Linear(3, 3)
         self.fc3 = nn.Linear(3, 3)
-        self.fc4 = nn.Linear(3, 3)
-        self.fc5 = nn.Linear(3, 3)
         self.fc6 = nn.Linear(3, 2)
         self.relu = nn.ReLU()
 
@@ -21,8 +20,6 @@ class StudentModel(nn.Module):
         x = self.relu(self.fc1(x))
         x = self.relu(self.fc2(x))
         x = self.relu(self.fc3(x))
-        x = self.relu(self.fc4(x))
-        x = self.relu(self.fc5(x))
         x = self.fc6(x)
         return x
 
@@ -64,6 +61,7 @@ if __name__ == "__main__":
                                       f=f"models/dim_{dim}_delta_{delta_radius}_frequency_{frequency}.onnx")
                     print(loss, l_GAD, l_CE, l_KD)
                     torch.save(student.state_dict(), f"models/dim_{dim}_delta_{delta_radius}_frequency_{frequency}.pt")
+                    nnet_exporter(student,f"models/dim_{dim}_delta_{delta_radius}_frequency_{frequency}.nnet",)
                     losses.append(loss)
 
 
