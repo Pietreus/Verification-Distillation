@@ -62,7 +62,7 @@ class CSVDataset(Dataset):
         self.data = pd.read_csv(csv_file)
         self.transform = transform
 
-        # Separate features and labels
+        # Separate features and labels.
         self.features = self.data.iloc[:, :-1].values.astype(np.float32)
         self.labels = self.data.iloc[:, -1].values.astype(np.int64)
 
@@ -89,7 +89,6 @@ class CSVDataset(Dataset):
             self.features = self.transform(self.features)
 
     def __len__(self):
-        # return len(self.data)
         return self.features.shape[0]
 
     def __getitem__(self, idx):
@@ -245,7 +244,7 @@ if __name__ == "__main__":
     print("Performing Knowledge Distillation")
     noise_radius = 1
     distillation_data = CSVDataset(csv_file, transform=ToTensor(), target_size=10e4,
-                                   apply_noise=True, noise_radius=noise_radius)
+                                   apply_noise=False, noise_radius=noise_radius)
 
     l_GAD = 5000
     l_CE = 2
@@ -295,14 +294,6 @@ if __name__ == "__main__":
     print(f'Student Validation Accuracy: {100 * correct / total:.2f}%')
 
     # Saving models.
-    torch.onnx.export(student, args=(val_dataset[0][0]),
-                      f=f"models/student_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.onnx")
-    torch.save(student.state_dict(), f"models/student_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.pt")
-
-    torch.onnx.export(teacher, args=(val_dataset[0][0]),
-                      f=f"models/teacher_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.onnx")
-    torch.save(teacher.state_dict(), f"models/teacher_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.pt")
-
     nnet_exporter(student, f"models/nnet/student_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.nnet", dataset)
     nnet_exporter(teacher, f"models/nnet/teacher_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.nnet", dataset)
 
