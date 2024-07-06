@@ -22,7 +22,7 @@ library(tidyverse)
 
 ```{r data}
 
-data <- read.csv("runs/May28_17-05-28_thinkpad/summary.csv")
+data <- read.csv("../../../runs/May28_17-05-28_thinkpad/summary.csv")
 
 data %>% mutate(max_grad_ratio = as.numeric(max_grad_ratio))
 

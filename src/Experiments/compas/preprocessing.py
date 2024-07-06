@@ -1,6 +1,6 @@
 import pandas as pd
 
-df = pd.read_csv('datasets/compas-scores-raw.csv')
+df = pd.read_csv('../../../datasets/compas-scores-raw.csv')
 
 # Drop attributes.
 to_drop = ['IsCompleted', 'IsDeleted', 'AssessmentType', 'MiddleName',
@@ -39,5 +39,5 @@ Scale_ID = {7: 1, 8: 2, 18: 3}
 df["Scale_ID"] = df["Scale_ID"].map(Scale_ID)
 
 # Output.
-ScoreText={"Low":1, "Medium":2, "High":3 }
-df["ScoreText"]=df["ScoreText"].map(ScoreText)
+ScoreText = {"Low": 1, "Medium": 2, "High": 3}
+df["ScoreText"] = df["ScoreText"].map(ScoreText)
