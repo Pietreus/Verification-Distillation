@@ -9,22 +9,8 @@ from torch import nn
 
 from KD import knowledge_distillation
 from RobustMockTeacher import MockNeuralNetwork
-from src.Utils import nnet_exporter
-
-
-class StudentModel(nn.Module):
-    def __init__(self, input_dim):
-        super(StudentModel, self).__init__()
-        self.fc1 = nn.Linear(input_dim, 5)
-        self.fc2 = nn.Linear(5, 5)
-        self.fc3 = nn.Linear(5, 2)
-        self.relu = nn.ReLU()
-
-    def forward(self, x):
-        x = self.relu(self.fc1(x))
-        x = self.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
+from src.utils.Relu_network import FFNetwork
+from src.utils.data.nnet_exporter import tensor_nnet_exporter
 
 
 def high_confidence_data(synthetic_data, model, confidence):
@@ -127,7 +113,7 @@ if __name__ == "__main__":
     # frequencies = [1, 5, 10, 50, 75, 100]
     for frequency in frequencies:
         for confidence in confidences:
-            student = StudentModel(dim)
+            student = FFNetwork(dim,2,[5,5])
             mock_teacher = MockNeuralNetwork(dim, frequency, device=device)
             student.to(device)
             mock_teacher.to(device)
@@ -187,7 +173,7 @@ if __name__ == "__main__":
                          teacher_robust, teacher_robustness_radius, student_robust, student_robustness_radius,
                          grad_ratio.mean().detach().numpy(), grad_ratio.min().detach().numpy(), softmax_prediction_diff.mean().detach().numpy(), softmax_prediction_diff.min().detach().numpy()))
 
-            nnet_exporter(student,
+            tensor_nnet_exporter(student,
                           os.path.join("runs", f"{current_time}_{hostname}",
                                        f"student_{frequency}_"
                                        f"confidence_{confidence}_"
