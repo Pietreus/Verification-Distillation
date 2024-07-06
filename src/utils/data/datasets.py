@@ -7,11 +7,13 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 
 def to_tensor(data): return torch.tensor(data, dtype=torch.float32)
 
+
 def add_uniform_ball_noise(data, radius):
     n_samples, n_features = data.shape
     noise = np.random.uniform(-radius, radius, size=(n_samples, n_features))
     noise = noise / np.linalg.norm(noise, axis=1, keepdims=True) * np.random.uniform(0, radius, size=(n_samples, 1))
     return data + noise
+
 
 class CSVDataset(Dataset):
     def __init__(self, csv_file, target_size=None, noise_radius=1, transform=to_tensor, apply_noise=False):
@@ -55,6 +57,17 @@ class CSVDataset(Dataset):
         label = self.labels[idx]
         return sample, label
 
+
+class SyntheticDataset(Dataset):
+    def __init__(self, data: torch.Tensor, labels: torch.Tensor):
+        self.data = data.clone().detach()
+        self.labels = labels.clone().detach()
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        return self.data[idx], self.labels[idx]
 
 
 class ToTensor:

@@ -3,6 +3,8 @@ import torch
 from scipy.spatial import KDTree
 
 
+# TODO: add guarantees for eps nets.
+
 def chernoff_guarantee_eps(x, eta_error_probability):
     """
     Returns the epsilon error for the coverage estimate, given a dataset, a delta and a error probability

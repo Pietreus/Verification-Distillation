@@ -2,11 +2,11 @@ import numpy as np
 import torch
 from sklearn.metrics import accuracy_score
 from torch import nn, optim
-from torch.utils.data import Dataset, random_split, DataLoader
+from torch.utils.data import random_split, DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 from src.Utils.Relu_network import FFNetwork
-from src.Utils.csv_dataset import CSVDataset
+from src.Utils.data.datasets import CSVDataset
 from src.Utils.knowledge_distillation import knowledge_distillation_training
 
 writer = SummaryWriter()
