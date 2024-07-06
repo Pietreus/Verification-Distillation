@@ -5,9 +5,11 @@ from torch import nn, optim
 from torch.utils.data import random_split, DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from src.Utils.Relu_network import FFNetwork
-from src.Utils.data.datasets import CSVDataset
-from src.Utils.knowledge_distillation import knowledge_distillation_training
+from src.utils.Relu_network import FFNetwork
+from src.utils.data.datasets import CSVDataset
+from src.utils.knowledge_distillation import knowledge_distillation_training
+
+from src.utils.data.nnet_exporter import dataset_nnet_exporter
 
 writer = SummaryWriter()
 
@@ -166,7 +168,8 @@ if __name__ == "__main__":
     # Saving models.
     torch.save(student.state_dict(), f"models/student_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.pt")
     torch.save(teacher.state_dict(), f"models/teacher_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.pt")
-
+    dataset_nnet_exporter(student, f"models/nnet/student_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.nnet", dataset)
+    dataset_nnet_exporter(teacher, f"models/nnet/teacher_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.nnet", dataset)
     # Checking for disagreement.
 
     print_disagreement_check(distillation_data, teacher=teacher, student=student)
