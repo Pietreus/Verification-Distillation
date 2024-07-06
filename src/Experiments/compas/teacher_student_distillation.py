@@ -22,6 +22,11 @@ def print_disagreement_check(dataset, teacher, student):
     teacher_grads = []
     ratios = []
     difference_ratios = []
+    median_directional = []
+    median_directional_all = []
+    min_directional = []
+    mean_diff_directional = []
+    max_diff_directional = []
 
     for samples, labels in data_loader:
         optimizer.zero_grad()
@@ -48,15 +53,30 @@ def print_disagreement_check(dataset, teacher, student):
         student_grads.append(torch.norm(student_grad))
         ratios.append(torch.norm(student_grad) / torch.norm(teacher_grad))
 
+        # Direction_wise disagreement
+        ratio = torch.abs(student_grad / teacher_grad)
+        bad_ratios = ratio[ratio < 1]
+
+        median_directional.append(bad_ratios.median())
+        median_directional_all.append(ratio.median())
+        min_directional.append(bad_ratios.min())
+        mean_diff_directional.append(torch.mean(teacher_grad - student_grad))
+        max_diff_directional.append(torch.max(teacher_grad - student_grad))
+
         grad_discrepancy = torch.norm(teacher_grad - student_grad)
         grad_discrepancies.append(grad_discrepancy)
 
-    print(torch.max(torch.stack(differences)))  # Function values
-    print(torch.max(torch.stack(grad_discrepancies)))  # Gradient abs difference
-    print(torch.max(torch.stack(teacher_grads)))
-    print(torch.max(torch.stack(student_grads)))
-    print(torch.max(torch.stack(ratios)))  # student_grad/teacher_grad
-    print(torch.max(torch.stack(difference_ratios)))  # ratio of difference in prediction
+    # print(torch.max(torch.stack(differences)))  # Function values
+    # print(torch.max(torch.stack(grad_discrepancies)))  # Gradient abs difference
+    print(torch.min(torch.stack(teacher_grads)))
+    # print(torch.max(torch.stack(student_grads)))
+    # print(torch.max(torch.stack(ratios)))  # student_grad/teacher_grad
+    # print(torch.max(torch.stack(difference_ratios)))  # ratio of difference in prediction
+    print(f"Median ratio directional, for < 1: {torch.median(torch.stack(median_directional))}")
+    print(f"Median ratio directional, for all: {torch.median(torch.stack(median_directional_all))}")
+    print(f"Min ratio directional, for < 1: {torch.min(torch.stack(min_directional))}")
+    print(f"Mean difference directional disagreement: {torch.mean(torch.stack(mean_diff_directional))}")
+    print(f"Max difference directional disagreement: {torch.max(torch.stack(max_diff_directional))}")
 
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@ def LGAD(inputs: torch.Tensor,
          true_labels: torch.Tensor,
          student_predictions: torch.Tensor,
          teacher_predictions: torch.Tensor,
+         softmax=True,
          lambda_CE: float = 1.,
          lambda_KL: float = 1.,
          lambda_GAD: float = 1.,
@@ -24,6 +25,7 @@ def LGAD(inputs: torch.Tensor,
     - student-teacher KL divergence after application of softmax, weighted by lambda_KL and temperature
     - student-teacher gradient alignment with respect to the input after application of softmax, weighted by lambda_GAD
     TODO: link to paper
+    :param softmax: if true, consider predictions to be raw and apply softmax
     :param inputs: (n,d) tensor, the input of the current batch
     :param true_labels: (n,c) tensor, binary labels for the correct output classes
     :param student_predictions: (n,c) tensor, raw model output of the student
@@ -38,11 +40,14 @@ def LGAD(inputs: torch.Tensor,
 
     LCE = torch.nn.CrossEntropyLoss()
     LKL = torch.nn.KLDivLoss(log_target=True, reduction="batchmean")
-    CE_loss = LCE(torch.nn.functional.softmax(student_predictions, dim=1), true_labels)
     KL_loss = temperature ** 2 * LKL(torch.nn.functional.log_softmax(student_predictions, dim=1),
                                      torch.nn.functional.log_softmax(teacher_predictions, dim=1))
-    CE_loss_T = LCE(torch.nn.functional.softmax(teacher_predictions, dim=1), true_labels)
-
+    if softmax:
+        CE_loss = LCE(torch.nn.functional.softmax(student_predictions, dim=1), true_labels)
+        CE_loss_T = LCE(torch.nn.functional.softmax(teacher_predictions, dim=1), true_labels)
+    else:
+        CE_loss = LCE(student_predictions, true_labels)
+        CE_loss_T = LCE(teacher_predictions, true_labels)
     # compute gradients with respect to inputs,
     # use create graph option to make sure second order gradients can be computed with .backward()
 
