@@ -1,15 +1,16 @@
 import numpy as np
 import torch
-from sklearn.metrics import accuracy_score
 from torch import nn, optim
 from torch.utils.data import random_split, DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
+from src.experiments.synthetic_data.simple_synth_experiment import high_confidence_indices
 from src.utils.Relu_network import FFNetwork
 from src.utils.data.datasets import CSVDataset
 from src.utils.knowledge_distillation import knowledge_distillation_training
 
 from src.utils.data.nnet_exporter import dataset_nnet_exporter
+from src.utils.metrics import robustness_disparity
 
 writer = SummaryWriter()
 
@@ -86,7 +87,7 @@ if __name__ == "__main__":
     np.random.seed(42)
 
     # Load and preprocess dataset
-    csv_file = 'datasets/compas-scores-preprocessed.csv'
+    csv_file = '../../../datasets/compas-scores-preprocessed.csv'
     dataset = CSVDataset(csv_file, target_size=100, apply_noise=False)
 
     # Split into training and validation sets
@@ -131,28 +132,29 @@ if __name__ == "__main__":
     teacher.eval()
     with torch.no_grad():
         # for samples, labels in val_loader:
-        outputs = teacher(val_dataset[:, 0])
+        outputs = teacher(val_dataset[:][0])
         _, predicted = torch.max(outputs.data, 1)
-
-        print(f'Student Validation Accuracy: {accuracy_score(val_dataset[:, 1], predicted)}%')
+        _, true_label = torch.max(torch.Tensor(val_dataset[:][1]), 1)
+        print(f'Student Validation Accuracy: {torch.sum(true_label == predicted) / 100}%')
 
     # Distill student.
 
-    student = FFNetwork(input_dim=input_dim, output_dim=num_classes, layer_sizes=[6, 5])
+    student = FFNetwork(input_dim=input_dim, output_dim=num_classes, layer_sizes=[10, 10, 10])
     optimizer = optim.Adam(student.parameters(), lr=0.0005)
 
     # Knowledge distillation.
     print("Performing Knowledge Distillation")
     noise_radius = 1
-    distillation_data = CSVDataset(csv_file, target_size=10e7,
-                                   apply_noise=True, noise_radius=noise_radius)
+    distillation_data = CSVDataset(csv_file, target_size=1e5,
+                                   apply_noise=True, noise_radius=noise_radius, labelling_model=teacher)
 
     l_GAD = 50
     l_CE = 2
     l_KD = 5
     epochs = 50
 
-    knowledge_distillation_training(distillation_data, 3, teacher, student, l_GAD, l_CE, l_KD, epochs,
+    knowledge_distillation_training(distillation_data, 3, teacher, student,
+                                    l_GAD=l_GAD, l_CE=l_CE, l_KD=l_KD, learn_rate=0.0001, epochs=epochs,
                                     log_writer=writer)
     writer.close()
 
@@ -160,16 +162,31 @@ if __name__ == "__main__":
     student.eval()
     with torch.no_grad():
         # for samples, labels in val_loader:
-        outputs = student(val_dataset[:, 0])
+        outputs = teacher(val_dataset[:][0])
         _, predicted = torch.max(outputs.data, 1)
+        _, true_label = torch.max(torch.Tensor(val_dataset[:][1]), 1)
+        print(f'Student Validation Accuracy: {torch.sum(true_label == predicted) / 100}%')
 
-        print(f'Student Validation Accuracy: {accuracy_score(val_dataset[:, 1], predicted)}%')
 
     # Saving models.
-    torch.save(student.state_dict(), f"models/student_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.pt")
-    torch.save(teacher.state_dict(), f"models/teacher_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.pt")
-    dataset_nnet_exporter(student, f"models/nnet/student_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.nnet", dataset)
-    dataset_nnet_exporter(teacher, f"models/nnet/teacher_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.nnet", dataset)
+    torch.save(student.state_dict(), f"../../../models/student_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.pt")
+    torch.save(teacher.state_dict(), f"../../../models/teacher_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.pt")
+    dataset_nnet_exporter(student, f"../../../models/nnet/student_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.nnet",
+                          dataset)
+    dataset_nnet_exporter(teacher, f"../../../models/nnet/teacher_noise_{noise_radius}_CE_{l_CE}_KL_{l_KD}_GAD_{l_GAD}.nnet",
+                          dataset)
     # Checking for disagreement.
-
+    mask = high_confidence_indices(distillation_data.features, student, confidence=0.6)
+    rob_disparity, teacher_grad = robustness_disparity(distillation_data, teacher, student)
+    # mask = (teacher_grad > 0.1)
+    rob_disparity = rob_disparity[mask]
+    teacher_grad = teacher_grad[mask]
+    _, ind = rob_disparity.min(dim=0)
+    print((teacher_grad > 0.1).type(torch.float).mean())
+    # Checking for disagreement.
+    print(f"min relative robustness disparity: {rob_disparity.min()}\n"
+          f"teacher_grad at that point: {teacher_grad[ind]}\n"
+          f"mean relative robustness disparity: {rob_disparity.mean()}\n"
+          f"median relative robustness disparity: {rob_disparity.median()}\n"
+          f"quantile1 relative robustness disparity: {rob_disparity.quantile(q=.01)}\n")
     print_disagreement_check(distillation_data, teacher=teacher, student=student)

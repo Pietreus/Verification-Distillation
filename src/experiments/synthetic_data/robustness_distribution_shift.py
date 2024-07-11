@@ -113,7 +113,7 @@ if __name__ == "__main__":
     # frequencies = [1, 5, 10, 50, 75, 100]
     for frequency in frequencies:
         for confidence in confidences:
-            student = FFNetwork(dim,2,[5,5])
+            student = FFNetwork(dim, 2, [5, 5])
             mock_teacher = MockNeuralNetwork(dim, frequency, device=device)
             student.to(device)
             mock_teacher.to(device)

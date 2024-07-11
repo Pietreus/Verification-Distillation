@@ -7,8 +7,8 @@ def tensor_nnet_exporter(model: torch.nn.Module, file, inputs: torch.tensor, out
     model_dict = model.state_dict()
 
     # assume/hope this works :)
-    weights = [value for name, value in model_dict.items() if name.startswith("fc") and name.endswith("weight")]
-    biases = [value for name, value in model_dict.items() if name.startswith("fc") and name.endswith("bias")]
+    weights = [value for name, value in model_dict.items() if name.startswith("layers") and name.endswith("weight")]
+    biases = [value for name, value in model_dict.items() if name.startswith("layers") and name.endswith("bias")]
 
     with open(file, 'w', newline='\n') as f:
         # 1: Header text. This can be any number of lines so long as they begin with "//"
@@ -48,8 +48,8 @@ def dataset_nnet_exporter(model: torch.nn.Module, file, dataset, comment: str = 
     model_dict = model.state_dict()
 
     # assume/hope this works :)
-    weights = [value for name, value in model_dict.items() if name.startswith("fc") and name.endswith("weight")]
-    biases = [value for name, value in model_dict.items() if name.startswith("fc") and name.endswith("bias")]
+    weights = [value for name, value in model_dict.items() if name.startswith("layers") and name.endswith("weight")]
+    biases = [value for name, value in model_dict.items() if name.startswith("layers") and name.endswith("bias")]
 
     with open(file, 'w', newline='\n') as f:
         # 1: Header text. This can be any number of lines so long as they begin with "//"
@@ -66,16 +66,16 @@ def dataset_nnet_exporter(model: torch.nn.Module, file, dataset, comment: str = 
         f.write("0\n")
         # 5: Minimum values of inputs (used to keep inputs within expected range)
 
-        mins = dataset.data.min(axis=0)
-        f.write(f"{','.join([str(i) for i in mins])}\n")
+        mins = dataset.features.min(axis=0)
+        f.write(f"{','.join([str(i) for i in mins.values])}\n")
         # 6: Maximum values of inputs (used to keep inputs within expected range)
-        maxs = dataset.data.max(axis=0)
-        f.write(f"{','.join([str(i) for i in maxs])}\n")
+        maxs = dataset.features.max(axis=0)
+        f.write(f"{','.join([str(i) for i in maxs.values])}\n")
         # 7: Mean values of inputs and one value for all outputs (used for normalization)
-        means = dataset.data.mean(axis=0)
+        means = dataset.features.mean(axis=0)
         f.write(f"{','.join([str(i) for i in means])}\n")
         # 8: Range values of inputs and one value for all outputs (used for normalization)
-        ranges = maxs - mins
+        ranges = maxs.values - mins.values
         f.write(f"{','.join([str(i) for i in ranges])}\n")
         # 9+: Begin defining the weight matrix for the first layer, followed by the bias vector.
         # The weights and biases for the second layer follow after,

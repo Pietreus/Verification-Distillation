@@ -11,6 +11,7 @@ def LGAD(inputs: torch.Tensor,
          true_labels: torch.Tensor,
          student_predictions: torch.Tensor,
          teacher_predictions: torch.Tensor,
+         teacher_grads: torch.Tensor = None,
          softmax=True,
          lambda_CE: float = 1.,
          lambda_KL: float = 1.,
@@ -25,6 +26,7 @@ def LGAD(inputs: torch.Tensor,
     - student-teacher KL divergence after application of softmax, weighted by lambda_KL and temperature
     - student-teacher gradient alignment with respect to the input after application of softmax, weighted by lambda_GAD
     TODO: link to paper
+    :param teacher_grads:
     :param softmax: if true, consider predictions to be raw and apply softmax
     :param inputs: (n,d) tensor, the input of the current batch
     :param true_labels: (n,c) tensor, binary labels for the correct output classes
@@ -51,8 +53,11 @@ def LGAD(inputs: torch.Tensor,
     # compute gradients with respect to inputs,
     # use create graph option to make sure second order gradients can be computed with .backward()
 
-    teacher_grad = torch.autograd.grad(CE_loss_T, inputs, retain_graph=True, create_graph=True)[0]
     student_grad = torch.autograd.grad(CE_loss, inputs, retain_graph=True, create_graph=True)[0]
+    if teacher_grads is not None:
+        teacher_grad = teacher_grads
+    else:
+        teacher_grad = torch.autograd.grad(CE_loss_T, inputs, retain_graph=True, create_graph=True)[0]
 
     grad_discrepancy = torch.norm(teacher_grad - student_grad)
     relative_grad_discrepancy = grad_discrepancy / torch.norm(student_grad)
@@ -77,7 +82,7 @@ class Dummy_writer:
 def knowledge_distillation_training(distillation_dataset: Dataset, num_classes: int,
                                     teacher_model: nn.Module,
                                     student_model: nn.Module,
-                                    batch_size: int = 128, epochs: int = 100, learn_rate=0.0005,
+                                    batch_size: int = 128, epochs: int = 100, learn_rate: float = 0.0005,
                                     Optimizer=optim.Adam, device="cpu",
                                     l_CE: float = 1., l_KD: float = 1., l_GAD: float = 1.,
                                     temperature=lambda x: np.exp(-x / 100),
@@ -108,15 +113,17 @@ def knowledge_distillation_training(distillation_dataset: Dataset, num_classes: 
     for epoch in tqdm(range(epochs), ncols=50 + epochs):
         train_loader = DataLoader(distillation_dataset, batch_size=batch_size, shuffle=True)
 
-        for batch_idx, (inputs, _) in enumerate(train_loader):  # we deliberately ignore real labels!
+        for batch_idx, (inputs, synthetic_labels) in enumerate(
+                train_loader):  # we deliberately ignore real labels!
             optimizer.zero_grad()
             inputs = inputs.to(device)
+            # teacher_outputs = synthetic_labels.to(device)
             inputs.requires_grad = True
             # Forward pass
             outputs = student_model(inputs)
             teacher_outputs = teacher_model(inputs)
-            teacher_predictions = teacher_model(inputs)
-            synthetic_labels = torch.eye(num_classes).to(device)[torch.argmax(teacher_predictions, dim=1)]
+            synthetic_labels = torch.eye(num_classes).to(device)[torch.argmax(teacher_outputs, dim=1)]
+
             loss, ce, kl, gad, grad_ratio = LGAD(inputs, synthetic_labels, outputs, teacher_outputs,
                                                  temperature=temperature(epoch), lambda_GAD=l_GAD,
                                                  lambda_CE=l_CE, lambda_KL=l_KD)
