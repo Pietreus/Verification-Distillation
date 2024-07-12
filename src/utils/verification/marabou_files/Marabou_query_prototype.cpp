@@ -811,8 +811,57 @@ void Marabou::prepareInputQuery() {
                 ++counter;
             }
         }
+        //TODO my variables
+        const unsigned targetClass1 = 0;
+        const unsigned targetClass2 = 1;
+        unsigned conf1;
+        unsigned i = 0;
+        for (const auto &outVar1: outlist1) {
+            if (i++ != targetClass1) continue;//encode this stuff only for the interesting class
 
+            Set<unsigned> maxSet1;
+            for (const auto &outVar2: outlist1) {
+                if (&outVar1 != &outVar2) {
+                    maxSet1.insert(outVar2);
 
+                    //make the targetclass the highest value.
+                    Equation predictRightClass(Equation::GE);
+                    predictRightClass.addAddend(1, outVar1);
+                    predictRightClass.addAddend(-1, outVar2);
+                    predictRightClass.setScalar(1e-6);
+                    _inputQuery.addEquation(predictRightClass);
+                }
+            }
+            unsigned max_var1 = _inputQuery.getNumberOfVariables();
+            _inputQuery.setNumberOfVariables(max_var1 + 1);
+            _inputQuery.setUpperBound(max_var1, 1000.0);
+            _inputQuery.setLowerBound(max_var1, -1000.0); //TODO: what is the meaning of this?
+            auto *max1 = new MaxConstraint(max_var1, maxSet1);//variable number max_var1 is the maximum of all other outputs
+            _inputQuery.addPiecewiseLinearConstraint(max1);//TODO: can be bounded with the range of the variables
+
+            unsigned var2 = _inputQuery.getNumberOfVariables();
+            _inputQuery.setNumberOfVariables(var2 + 1);
+            _inputQuery.setUpperBound(var2, 1000.0);
+            _inputQuery.setLowerBound(var2, -1000.0); //TODO: what is the meaning of this?
+            Equation equation2;
+            equation2.addAddend(1, var2);//var2 - outVar1 + max_var1 = log(output_dimensions)
+            equation2.addAddend(-1, outVar1);//==> var2 = log(output_dimensions) + outVar1 - max_var1
+            equation2.addAddend(1, max_var1);//TODO: still dont get it, probably something with the softmax stuff
+            equation2.setScalar(result);//TODO can be bounded with bounds of variables
+            _inputQuery.addEquation(equation2);
+
+            /*conf1 = _inputQuery.getNumberOfVariables();
+            _inputQuery.setNumberOfVariables(conf1 + 1);
+            _inputQuery.setUpperBound(conf1, 10.0); //TODO: what is the meaning of this?
+            _inputQuery.setLowerBound(conf1, -10.0);//this seems actually unused?*/
+
+            conf1 = sigmoid_anagha_final(var2);//redefined, new number of variables (or number or last one)
+
+            printf("\nconfidence = %d", conf1);
+
+        }
+
+        /*
         Map<unsigned, unsigned> map1;
         Set<unsigned> confSet1, confSet2;
         for (const auto &outVar1: outlist1) {
@@ -852,6 +901,25 @@ void Marabou::prepareInputQuery() {
             printf("\nconfidence = %d", conf1);
 
         }
+         */
+
+        i = 0;
+        for (const auto &outVar1: outlist1) {
+            if (i++ != targetClass2) continue;//encode this stuff only for the interesting class
+
+            for (const auto &outVar2: outlist1) {
+                if (&outVar1 != &outVar2) {
+
+                    //make the targetclass the highest value.
+                    Equation predictRightClass(Equation::GE);
+                    predictRightClass.addAddend(1, outVar1);
+                    predictRightClass.addAddend(-1, outVar2);
+                    predictRightClass.setScalar(1e-6);
+                    _inputQuery.addEquation(predictRightClass);
+                }
+            }
+        }
+        /*
         Map<unsigned, unsigned> map2;//TODO: should just be the same again
         for (const auto &outVar1: outlist2) {
             Set<unsigned> maxSet2;
@@ -885,11 +953,11 @@ void Marabou::prepareInputQuery() {
             map2.insert(conf2, id2.get(outVar1));
 
         }
-
+        */
         /*
           Step 2: extract the property in question
         */
-        double conf_from_user, epsilon_from_user;//TODO just read the tiny txt file with the property
+        double conf_from_user, epsilon_from_user;//TODO just read the tiny txt file with the property (maybe not needed anymore?)
         String propertyFilePath = Options::get()->getString(Options::PROPERTY_FILE_PATH);
         if (propertyFilePath != "") {
             printf("Property: %s\n", propertyFilePath.ascii()); // called
@@ -900,7 +968,8 @@ void Marabou::prepareInputQuery() {
 
         printf("\n");
 
-
+        //our constraints are now: network 1 picks targetclass1 network 2 picks targetclass 2, conf1 is the confidence of network 1
+        /*
         unsigned max_conf1 = _inputQuery.getNumberOfVariables();//TODO the maximum confidence of network 1
         _inputQuery.setNumberOfVariables(max_conf1 + 1);
         _inputQuery.setUpperBound(max_conf1, 1000.0);
@@ -916,22 +985,11 @@ void Marabou::prepareInputQuery() {
         auto *maxConfidence2 = new MaxConstraint(max_conf2, confSet2);
         _inputQuery.addPiecewiseLinearConstraint(maxConfidence2);
         printf("\nMaxConfidence2 = %d", max_conf2);
+         */
         unsigned counterX = 0;
         unsigned counterInVar = _inputQuery.getNumInputVariables() / 2;//TODO the variable directly after the inputs? not used? the first variable in the copy?
         _inputQuery.setUpperBound(counterInVar, 10000.0);
         _inputQuery.setLowerBound(counterInVar, -10000.0);
-
-        while (counterX < (_inputQuery.getNumInputVariables() / 2)) {//TODO: HERE THE PROPERTY IS ENCODED
-            if (counterX == 1) { ++counterX; } //TODO: this guy is skipped, meaning this pair of variables is free?
-            else {
-                Equation equation4(Equation::LE);//TODO: input_var_i - copyof_input_var_i <= 0.1, only onesided bound?
-                equation4.addAddend(1, (counterX));
-                equation4.addAddend(-1, (counterX + counterInVar));
-                equation4.setScalar(0.1);
-                _inputQuery.addEquation(equation4);
-                ++counterX;
-            }
-        }
 
         //TODO: ALTERNATIVE CODE SNIPPET FOR THE LOOP STARTING HERE
         while(counterX < (_inputQuery.getNumInputVariables())/2)
@@ -939,8 +997,8 @@ void Marabou::prepareInputQuery() {
 
             unsigned aa = _inputQuery.getNumberOfVariables();//TODO: aa is a new variable
             _inputQuery.setNumberOfVariables(aa+1);
-            _inputQuery.setUpperBound(aa,20.0);
-            _inputQuery.setLowerBound(aa,-20.0);
+            _inputQuery.setUpperBound(aa,epsilon_from_user);
+            _inputQuery.setLowerBound(aa,-epsilon_from_user);
             Equation equation4;
             equation4.addAddend(1, aa);//TODO: aa - input1 + input2 = 0 (aa is the difference)
             equation4.addAddend(-1, (counterX));
@@ -948,7 +1006,7 @@ void Marabou::prepareInputQuery() {
             equation4.setScalar(0);
             _inputQuery.addEquation(equation4);
 
-
+            /*
             unsigned max_input_dist = _inputQuery.getNumberOfVariables();//TODO max_input_dist = abs(aa)
             _inputQuery.setNumberOfVariables(max_input_dist+1);
             _inputQuery.setUpperBound(max_input_dist,100.0);
@@ -961,10 +1019,10 @@ void Marabou::prepareInputQuery() {
             Equation equation9(Equation::LE);
             equation9.addAddend(1, max_input_dist);
 
-            /*input distance*/
+            input distance
             equation9.setScalar(epsilon_from_user);//input_dist //TODO max_input_dist <= eps
             _inputQuery.addEquation(equation9);
-
+            */
             ++counterX;
         }
         //TODO:ALTERNATIVE CODE SNIPPET ENDING HERE
@@ -973,13 +1031,11 @@ void Marabou::prepareInputQuery() {
 
         double conf_from_user_app = conf_from_user - 0.1717; //TODO: apparent correction for 3 class confidence issue
         Equation equation44(Equation::GE);
-        equation44.addAddend(1, max_conf1);
+        equation44.addAddend(1, conf1);
         equation44.setScalar(conf_from_user_app);
         _inputQuery.addEquation(equation44);//TODO: max confidence >= user defined confidence
 
-
-
-        /*Query1 for 3 output variables - fairness*/
+        /*Query1 for 3 output variables - fairness
         unsigned outMax = _inputQuery.getNumberOfVariables(); //TODO new var
         _inputQuery.setNumberOfVariables(outMax + 1);
         _inputQuery.setLowerBound(outMax, -1000.0);
@@ -1008,6 +1064,8 @@ void Marabou::prepareInputQuery() {
         equation77.addAddend(-1, *outVar22);
         equation77.setScalar(0);
         _inputQuery.addEquation(equation77);
+
+        */
 
     }
     if (Options::get()->getBool(Options::DEBUG_ASSIGNMENT))
