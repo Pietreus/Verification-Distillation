@@ -924,7 +924,7 @@ void Marabou::prepareInputQuery() {
         while (counterX < (_inputQuery.getNumInputVariables() / 2)) {//TODO: HERE THE PROPERTY IS ENCODED
             if (counterX == 1) { ++counterX; } //TODO: this guy is skipped, meaning this pair of variables is free?
             else {
-                Equation equation4(Equation::LE);//TODO: input_var_i - copyof_input_var_i <= 0.1, only onsided bound?
+                Equation equation4(Equation::LE);//TODO: input_var_i - copyof_input_var_i <= 0.1, only onesided bound?
                 equation4.addAddend(1, (counterX));
                 equation4.addAddend(-1, (counterX + counterInVar));
                 equation4.setScalar(0.1);
@@ -932,6 +932,43 @@ void Marabou::prepareInputQuery() {
                 ++counterX;
             }
         }
+
+        //TODO: ALTERNATIVE CODE SNIPPET FOR THE LOOP STARTING HERE
+        while(counterX < (_inputQuery.getNumInputVariables())/2)
+        {
+
+            unsigned aa = _inputQuery.getNumberOfVariables();//TODO: aa is a new variable
+            _inputQuery.setNumberOfVariables(aa+1);
+            _inputQuery.setUpperBound(aa,20.0);
+            _inputQuery.setLowerBound(aa,-20.0);
+            Equation equation4;
+            equation4.addAddend(1, aa);//TODO: aa - input1 + input2 = 0 (aa is the difference)
+            equation4.addAddend(-1, (counterX));
+            equation4.addAddend(1, (counterX+counterInVar));
+            equation4.setScalar(0);
+            _inputQuery.addEquation(equation4);
+
+
+            unsigned max_input_dist = _inputQuery.getNumberOfVariables();//TODO max_input_dist = abs(aa)
+            _inputQuery.setNumberOfVariables(max_input_dist+1);
+            _inputQuery.setUpperBound(max_input_dist,100.0);
+            _inputQuery.setLowerBound(max_input_dist,-100.0);
+            AbsoluteValueConstraint *max_input_dist_ = new AbsoluteValueConstraint(max_input_dist, aa);
+            _inputQuery.addPiecewiseLinearConstraint(max_input_dist_);
+            //MaxConstraint *max_input_dist_ = new MaxConstraint(max_input_dist, inputDistSet1);
+            //_inputQuery.addPiecewiseLinearConstraint(max_input_dist_);
+
+            Equation equation9(Equation::LE);
+            equation9.addAddend(1, max_input_dist);
+
+            /*input distance*/
+            equation9.setScalar(epsilon_from_user);//input_dist //TODO max_input_dist <= eps
+            _inputQuery.addEquation(equation9);
+
+            ++counterX;
+        }
+        //TODO:ALTERNATIVE CODE SNIPPET ENDING HERE
+
         /*Property starts here*/
 
         double conf_from_user_app = conf_from_user - 0.1717; //TODO: apparent correction for 3 class confidence issue
@@ -943,18 +980,18 @@ void Marabou::prepareInputQuery() {
 
 
         /*Query1 for 3 output variables - fairness*/
-        unsigned outMax = _inputQuery.getNumberOfVariables();//TODO new var
+        unsigned outMax = _inputQuery.getNumberOfVariables(); //TODO new var
         _inputQuery.setNumberOfVariables(outMax + 1);
         _inputQuery.setLowerBound(outMax, -1000.0);
         _inputQuery.setUpperBound(outMax, 1000.0);
-        auto *mOut = new MaxConstraint(outMax, outSet1);//TODO: Max output value
+        auto *mOut = new MaxConstraint(outMax, outSet1); //TODO: Max output value
         _inputQuery.addPiecewiseLinearConstraint(mOut);
 
         unsigned outMax2 = _inputQuery.getNumberOfVariables();
         _inputQuery.setNumberOfVariables(outMax2 + 1);
         _inputQuery.setLowerBound(outMax2, -1000.0);
         _inputQuery.setUpperBound(outMax2, 1000.0);
-        auto *mOut2 = new MaxConstraint(outMax2, outSet2);//TODO: max output value of network 2
+        auto *mOut2 = new MaxConstraint(outMax2, outSet2); //TODO: max output value of network 2
         _inputQuery.addPiecewiseLinearConstraint(mOut2);
 
         auto outVar11 = outSet1.begin();//TODO: who is this guy? iterating over all outputs of network 1?
