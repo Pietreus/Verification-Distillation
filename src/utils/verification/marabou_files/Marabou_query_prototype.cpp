@@ -850,58 +850,11 @@ void Marabou::prepareInputQuery() {
             equation2.setScalar(result);//TODO can be bounded with bounds of variables
             _inputQuery.addEquation(equation2);
 
-            /*conf1 = _inputQuery.getNumberOfVariables();
-            _inputQuery.setNumberOfVariables(conf1 + 1);
-            _inputQuery.setUpperBound(conf1, 10.0); //TODO: what is the meaning of this?
-            _inputQuery.setLowerBound(conf1, -10.0);//this seems actually unused?*/
-
             conf1 = sigmoid_anagha_final(var2);//redefined, new number of variables (or number or last one)
 
             printf("\nconfidence = %d", conf1);
 
         }
-
-        /*
-        Map<unsigned, unsigned> map1;
-        Set<unsigned> confSet1, confSet2;
-        for (const auto &outVar1: outlist1) {
-            Set<unsigned> maxSet1;
-            for (const auto &outVar2: outlist1) {
-                if (&outVar1 != &outVar2) {
-                    maxSet1.insert(outVar2);
-                }
-            }
-            unsigned max_var1 = _inputQuery.getNumberOfVariables();
-            _inputQuery.setNumberOfVariables(max_var1 + 1);
-            _inputQuery.setUpperBound(max_var1, 1000.0);
-            _inputQuery.setLowerBound(max_var1, -1000.0); //TODO: what is the meaning of this?
-            auto *max1 = new MaxConstraint(max_var1, maxSet1);//variable number max_var1 is the maximum of all other outputs
-            _inputQuery.addPiecewiseLinearConstraint(max1);//TODO: can be bounded with the range of the variables
-
-            unsigned var2 = _inputQuery.getNumberOfVariables();
-            _inputQuery.setNumberOfVariables(var2 + 1);
-            _inputQuery.setUpperBound(var2, 1000.0);
-            _inputQuery.setLowerBound(var2, -1000.0); //TODO: what is the meaning of this?
-            Equation equation2;
-            equation2.addAddend(1, var2);//var2 - outVar1 + max_var1 = log(output_dimensions)
-            equation2.addAddend(-1, outVar1);//==> var2 = log(output_dimensions) + outVar1 - max_var1
-            equation2.addAddend(1, max_var1);//TODO: still dont get it, probably something with the softmax stuff
-            equation2.setScalar(result);//TODO can be bounded with bounds of variables
-            _inputQuery.addEquation(equation2);
-
-            unsigned conf1 = _inputQuery.getNumberOfVariables();
-            _inputQuery.setNumberOfVariables(conf1 + 1);
-            _inputQuery.setUpperBound(conf1, 10.0); //TODO: what is the meaning of this?
-            _inputQuery.setLowerBound(conf1, -10.0);//this seems actually unused?
-            conf1 = sigmoid_anagha_final(var2);//redefined, new number of variables (or number or last one)
-            confSet1.insert(conf1);
-            map1.insert(conf1, id1.get(outVar1));
-
-
-            printf("\nconfidence = %d", conf1);
-
-        }
-         */
 
         i = 0;
         for (const auto &outVar1: outlist1) {
@@ -919,41 +872,7 @@ void Marabou::prepareInputQuery() {
                 }
             }
         }
-        /*
-        Map<unsigned, unsigned> map2;//TODO: should just be the same again
-        for (const auto &outVar1: outlist2) {
-            Set<unsigned> maxSet2;
-            for (const auto &outVar2: outlist2) {
-                if (&outVar1 != &outVar2) {
-                    maxSet2.insert(outVar2);
-                }
-            }
-            unsigned max_var2 = _inputQuery.getNumberOfVariables();
-            _inputQuery.setNumberOfVariables(max_var2 + 1);
-            auto *max2 = new MaxConstraint(max_var2, maxSet2);
-            _inputQuery.addPiecewiseLinearConstraint(max2);
 
-            unsigned var3 = _inputQuery.getNumberOfVariables();
-            _inputQuery.setNumberOfVariables(var3 + 1);
-            _inputQuery.setUpperBound(var3, 1000.0); //TODO: what is the meaning of this?
-            _inputQuery.setLowerBound(var3, -1000.0);
-            Equation equation3;
-            equation3.addAddend(1, var3);
-            equation3.addAddend(-1, outVar1);
-            equation3.addAddend(1, max_var2);
-            equation3.setScalar(result);
-            _inputQuery.addEquation(equation3);
-
-            unsigned conf2 = _inputQuery.getNumberOfVariables();
-            _inputQuery.setNumberOfVariables(conf2 + 1);
-            _inputQuery.setUpperBound(conf2, 1000.0); //TODO: what is the meaning of this?
-            _inputQuery.setLowerBound(conf2, -1000.0);
-            conf2 = sigmoid_anagha_final(var3);
-            confSet2.insert(conf2);
-            map2.insert(conf2, id2.get(outVar1));
-
-        }
-        */
         /*
           Step 2: extract the property in question
         */
@@ -968,24 +887,6 @@ void Marabou::prepareInputQuery() {
 
         printf("\n");
 
-        //our constraints are now: network 1 picks targetclass1 network 2 picks targetclass 2, conf1 is the confidence of network 1
-        /*
-        unsigned max_conf1 = _inputQuery.getNumberOfVariables();//TODO the maximum confidence of network 1
-        _inputQuery.setNumberOfVariables(max_conf1 + 1);
-        _inputQuery.setUpperBound(max_conf1, 1000.0);
-        _inputQuery.setLowerBound(max_conf1, -1000.0);
-        auto *maxConfidence1 = new MaxConstraint(max_conf1, confSet1);
-        _inputQuery.addPiecewiseLinearConstraint(maxConfidence1);
-        printf("\nMaxConfidence1 = %d", max_conf1);
-
-        unsigned max_conf2 = _inputQuery.getNumberOfVariables();//TODO the maximum confidence of network 2
-        _inputQuery.setNumberOfVariables(max_conf2 + 1);
-        _inputQuery.setUpperBound(max_conf2, 1000.0);
-        _inputQuery.setLowerBound(max_conf2, -1000.0);
-        auto *maxConfidence2 = new MaxConstraint(max_conf2, confSet2);
-        _inputQuery.addPiecewiseLinearConstraint(maxConfidence2);
-        printf("\nMaxConfidence2 = %d", max_conf2);
-         */
         unsigned counterX = 0;
         unsigned counterInVar = _inputQuery.getNumInputVariables() / 2;//TODO the variable directly after the inputs? not used? the first variable in the copy?
         _inputQuery.setUpperBound(counterInVar, 10000.0);
@@ -1006,23 +907,6 @@ void Marabou::prepareInputQuery() {
             equation4.setScalar(0);
             _inputQuery.addEquation(equation4);
 
-            /*
-            unsigned max_input_dist = _inputQuery.getNumberOfVariables();//TODO max_input_dist = abs(aa)
-            _inputQuery.setNumberOfVariables(max_input_dist+1);
-            _inputQuery.setUpperBound(max_input_dist,100.0);
-            _inputQuery.setLowerBound(max_input_dist,-100.0);
-            AbsoluteValueConstraint *max_input_dist_ = new AbsoluteValueConstraint(max_input_dist, aa);
-            _inputQuery.addPiecewiseLinearConstraint(max_input_dist_);
-            //MaxConstraint *max_input_dist_ = new MaxConstraint(max_input_dist, inputDistSet1);
-            //_inputQuery.addPiecewiseLinearConstraint(max_input_dist_);
-
-            Equation equation9(Equation::LE);
-            equation9.addAddend(1, max_input_dist);
-
-            input distance
-            equation9.setScalar(epsilon_from_user);//input_dist //TODO max_input_dist <= eps
-            _inputQuery.addEquation(equation9);
-            */
             ++counterX;
         }
         //TODO:ALTERNATIVE CODE SNIPPET ENDING HERE
@@ -1035,37 +919,7 @@ void Marabou::prepareInputQuery() {
         equation44.setScalar(conf_from_user_app);
         _inputQuery.addEquation(equation44);//TODO: max confidence >= user defined confidence
 
-        /*Query1 for 3 output variables - fairness
-        unsigned outMax = _inputQuery.getNumberOfVariables(); //TODO new var
-        _inputQuery.setNumberOfVariables(outMax + 1);
-        _inputQuery.setLowerBound(outMax, -1000.0);
-        _inputQuery.setUpperBound(outMax, 1000.0);
-        auto *mOut = new MaxConstraint(outMax, outSet1); //TODO: Max output value
-        _inputQuery.addPiecewiseLinearConstraint(mOut);
 
-        unsigned outMax2 = _inputQuery.getNumberOfVariables();
-        _inputQuery.setNumberOfVariables(outMax2 + 1);
-        _inputQuery.setLowerBound(outMax2, -1000.0);
-        _inputQuery.setUpperBound(outMax2, 1000.0);
-        auto *mOut2 = new MaxConstraint(outMax2, outSet2); //TODO: max output value of network 2
-        _inputQuery.addPiecewiseLinearConstraint(mOut2);
-
-        auto outVar11 = outSet1.begin();//TODO: who is this guy? iterating over all outputs of network 1?
-
-        Equation equation76(Equation::GE);//TODO: outMax1 - the FIRST VARIABLE IS > 0.0001 SO IT IS NOT THE FIRST CLASS
-        equation76.addAddend(1, outMax);
-        equation76.addAddend(-1, *outVar11);
-        equation76.setScalar(0.0001);
-        _inputQuery.addEquation(equation76);
-
-        auto outVar22 = outSet2.begin();//TODO: same thing but
-        Equation equation77;//TODO: outmax2 - the FIRST VARIABLE IS == 0 SO IT IS THE FIRST CLASS
-        equation77.addAddend(1, outMax2);
-        equation77.addAddend(-1, *outVar22);
-        equation77.setScalar(0);
-        _inputQuery.addEquation(equation77);
-
-        */
 
     }
     if (Options::get()->getBool(Options::DEBUG_ASSIGNMENT))
