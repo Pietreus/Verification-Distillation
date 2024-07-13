@@ -35,7 +35,7 @@
 double log(unsigned n);
 
 Marabou::Marabou()
-    : _acasParser(NULL), _engine()
+        : _acasParser(NULL), _engine()
 {
 }
 
@@ -65,8 +65,9 @@ void Marabou::run()
 }
 
 
-unsigned Marabou::sigmoid_anagha_final(unsigned var2)
+unsigned Marabou::sigmoid_anagha_final(unsigned variable)
 {
+    //we want sigmoid variable - lse_approximation
     Set<unsigned int> set3, set4, minSet3, minSet4;
 
     unsigned q2_ = _inputQuery.getNumberOfVariables();
@@ -75,7 +76,7 @@ unsigned Marabou::sigmoid_anagha_final(unsigned var2)
     _inputQuery.setUpperBound(q2_, 100.0);
     Equation eq2_;
     eq2_.addAddend(1, q2_);
-    eq2_.addAddend(-0.002543865904564067, var2);
+    eq2_.addAddend(-0.002543865904564067, variable);
     eq2_.setScalar(0.01805060314480649);
     _inputQuery.addEquation(eq2_);
     set3.insert(q2_);
@@ -85,7 +86,7 @@ unsigned Marabou::sigmoid_anagha_final(unsigned var2)
     _inputQuery.setUpperBound(q3_, 100.0);
     Equation eq3_;
     eq3_.addAddend(1, q3_);
-    eq3_.addAddend(-0.008671798219180675, var2);
+    eq3_.addAddend(-0.008671798219180675, variable);
     eq3_.setScalar(0.05003576561700055);
     _inputQuery.addEquation(eq3_);
     set3.insert(q3_);
@@ -95,7 +96,7 @@ unsigned Marabou::sigmoid_anagha_final(unsigned var2)
     _inputQuery.setUpperBound(q4_, 100.0);
     Equation eq4_;
     eq4_.addAddend(1, q4_);
-    eq4_.addAddend(-0.0160918859304203, var2);
+    eq4_.addAddend(-0.0160918859304203, variable);
     eq4_.setScalar(0.08240230673319072);
     _inputQuery.addEquation(eq4_);
     set3.insert(q4_);
@@ -105,7 +106,7 @@ unsigned Marabou::sigmoid_anagha_final(unsigned var2)
     _inputQuery.setUpperBound(q5_, 100.0);
     Equation eq5_;
     eq5_.addAddend(1, q5_);
-    eq5_.addAddend(-0.02434297406286057, var2);
+    eq5_.addAddend(-0.02434297406286057, variable);
     eq5_.setScalar(0.1143649740425666);
     _inputQuery.addEquation(eq5_);
     set3.insert(q5_);
@@ -115,7 +116,7 @@ unsigned Marabou::sigmoid_anagha_final(unsigned var2)
     _inputQuery.setUpperBound(q6_, 100.0);
     Equation eq6_;
     eq6_.addAddend(1, q6_);
-    eq6_.addAddend(-0.03648513005820122, var2);
+    eq6_.addAddend(-0.03648513005820122, variable);
     eq6_.setScalar(0.15616581066719448);
     _inputQuery.addEquation(eq6_);
     set3.insert(q6_);
@@ -125,7 +126,7 @@ unsigned Marabou::sigmoid_anagha_final(unsigned var2)
     _inputQuery.setUpperBound(q7_, 100.0);
     Equation eq7_;
     eq7_.addAddend(1, q7_);
-    eq7_.addAddend(-0.053930892473068974, var2);
+    eq7_.addAddend(-0.053930892473068974, variable);
     eq7_.setScalar(0.20870845479245959);
     _inputQuery.addEquation(eq7_);
     set3.insert(q7_);
@@ -135,7 +136,7 @@ unsigned Marabou::sigmoid_anagha_final(unsigned var2)
     _inputQuery.setUpperBound(q8_, 100.0);
     Equation eq8_;
     eq8_.addAddend(1, q8_);
-    eq8_.addAddend(-0.0712222309563578, var2);
+    eq8_.addAddend(-0.0712222309563578, variable);
     eq8_.setScalar(0.25402251637804774);
     _inputQuery.addEquation(eq8_);
     set3.insert(q8_);
@@ -145,7 +146,7 @@ unsigned Marabou::sigmoid_anagha_final(unsigned var2)
     _inputQuery.setUpperBound(q9_, 100.0);
     Equation eq9_;
     eq9_.addAddend(1, q9_);
-    eq9_.addAddend(-0.08517649902476777, var2);
+    eq9_.addAddend(-0.08517649902476777, variable);
     eq9_.setScalar(0.28712509843219053);
     _inputQuery.addEquation(eq9_);
     set3.insert(q9_);
@@ -155,7 +156,7 @@ unsigned Marabou::sigmoid_anagha_final(unsigned var2)
     _inputQuery.setUpperBound(q10_, 100.0);
     Equation eq10_;
     eq10_.addAddend(1, q10_);
-    eq10_.addAddend(-0.10105713280442323, var2);
+    eq10_.addAddend(-0.10105713280442323, variable);
     eq10_.setScalar(0.32137391451541486);
     _inputQuery.addEquation(eq10_);
     set3.insert(q10_);
@@ -165,7 +166,7 @@ unsigned Marabou::sigmoid_anagha_final(unsigned var2)
     _inputQuery.setUpperBound(q11_, 100.0);
     Equation eq11_;
     eq11_.addAddend(1, q11_);
-    eq11_.addAddend(-0.11877226533845178, var2);
+    eq11_.addAddend(-0.11877226533845178, variable);
     eq11_.setScalar(0.35576112149866723);
     _inputQuery.addEquation(eq11_);
     set3.insert(q11_);
@@ -175,7 +176,7 @@ unsigned Marabou::sigmoid_anagha_final(unsigned var2)
     _inputQuery.setUpperBound(q12_, 100.0);
     Equation eq12_;
     eq12_.addAddend(1, q12_);
-    eq12_.addAddend(-0.13805388170120814, var2);
+    eq12_.addAddend(-0.13805388170120814, variable);
     eq12_.setScalar(0.38903490752059966);
     _inputQuery.addEquation(eq12_);
     set3.insert(q12_);
@@ -185,7 +186,7 @@ unsigned Marabou::sigmoid_anagha_final(unsigned var2)
     _inputQuery.setUpperBound(q13_, 100.0);
     Equation eq13_;
     eq13_.addAddend(1, q13_);
-    eq13_.addAddend(-0.15841276484258954, var2);
+    eq13_.addAddend(-0.15841276484258954, variable);
     eq13_.setScalar(0.4197833653601326);
     _inputQuery.addEquation(eq13_);
     set3.insert(q13_);
@@ -195,7 +196,7 @@ unsigned Marabou::sigmoid_anagha_final(unsigned var2)
     _inputQuery.setUpperBound(q14_, 100.0);
     Equation eq14_;
     eq14_.addAddend(1, q14_);
-    eq14_.addAddend(-0.17911003633714492, var2);
+    eq14_.addAddend(-0.17911003633714492, variable);
     eq14_.setScalar(0.44658826147689556);
     _inputQuery.addEquation(eq14_);
     set3.insert(q14_);
@@ -205,7 +206,7 @@ unsigned Marabou::sigmoid_anagha_final(unsigned var2)
     _inputQuery.setUpperBound(q15_, 100.0);
     Equation eq15_;
     eq15_.addAddend(1, q15_);
-    eq15_.addAddend(-0.1991616624642956, var2);
+    eq15_.addAddend(-0.1991616624642956, variable);
     eq15_.setScalar(0.46824484877026984);
     _inputQuery.addEquation(eq15_);
     set3.insert(q15_);
@@ -215,7 +216,7 @@ unsigned Marabou::sigmoid_anagha_final(unsigned var2)
     _inputQuery.setUpperBound(q16_, 100.0);
     Equation eq16_;
     eq16_.addAddend(1, q16_);
-    eq16_.addAddend(-0.217391566491753, var2);
+    eq16_.addAddend(-0.217391566491753, variable);
     eq16_.setScalar(0.48401859038912826);
     _inputQuery.addEquation(eq16_);
     set3.insert(q16_);
@@ -225,7 +226,7 @@ unsigned Marabou::sigmoid_anagha_final(unsigned var2)
     _inputQuery.setUpperBound(q17_, 100.0);
     Equation eq17_;
     eq17_.addAddend(1, q17_);
-    eq17_.addAddend(-0.23254124615360464, var2);
+    eq17_.addAddend(-0.23254124615360464, variable);
     eq17_.setScalar(0.49388113246220744);
     _inputQuery.addEquation(eq17_);
     set3.insert(q17_);
@@ -235,7 +236,7 @@ unsigned Marabou::sigmoid_anagha_final(unsigned var2)
     _inputQuery.setUpperBound(q18_, 100.0);
     Equation eq18_;
     eq18_.addAddend(1, q18_);
-    eq18_.addAddend(-0.2465459176469087, var2);
+    eq18_.addAddend(-0.2465459176469087, variable);
     eq18_.setScalar(0.4996724297871519);
     _inputQuery.addEquation(eq18_);
     set3.insert(q18_);
@@ -246,355 +247,181 @@ unsigned Marabou::sigmoid_anagha_final(unsigned var2)
     _inputQuery.setLowerBound(q101_, -100.0);
     _inputQuery.setUpperBound(q101_, 100.0);
     Equation eq101_;
-    eq101_.addAddend(1, q101_);
-    eq101_.addAddend(-0.2465459176469087, var2);
+    eq101_.addAddend(-1, q101_);
+    eq101_.addAddend(-0.2465459176469087, variable);
     eq101_.setScalar(0.5003275702128485);
     _inputQuery.addEquation(eq101_);
+    set4.insert(q101_);
     unsigned q102_ = _inputQuery.getNumberOfVariables();
     _inputQuery.setNumberOfVariables(q102_ + 1);
     _inputQuery.setLowerBound(q102_, -100.0);
     _inputQuery.setUpperBound(q102_, 100.0);
     Equation eq102_;
-    eq102_.addAddend(1, q102_);
-    eq102_.addAddend(-0.2251459482999449, var2);
+    eq102_.addAddend(-1, q102_);
+    eq102_.addAddend(-0.2251459482999449, variable);
     eq102_.setScalar(0.5101081756873811);
     _inputQuery.addEquation(eq102_);
+    set4.insert(q102_);
     unsigned q103_ = _inputQuery.getNumberOfVariables();
     _inputQuery.setNumberOfVariables(q103_ + 1);
     _inputQuery.setLowerBound(q103_, -100.0);
     _inputQuery.setUpperBound(q103_, 100.0);
     Equation eq103_;
-    eq103_.addAddend(1, q103_);
-    eq103_.addAddend(-0.1991616624642951, var2);
+    eq103_.addAddend(-1, q103_);
+    eq103_.addAddend(-0.1991616624642951, variable);
     eq103_.setScalar(0.5317551512297305);
     _inputQuery.addEquation(eq103_);
+    set4.insert(q103_);
     unsigned q104_ = _inputQuery.getNumberOfVariables();
     _inputQuery.setNumberOfVariables(q104_ + 1);
     _inputQuery.setLowerBound(q104_, -100.0);
     _inputQuery.setUpperBound(q104_, 100.0);
     Equation eq104_;
-    eq104_.addAddend(1, q104_);
-    eq104_.addAddend(-0.17911003633714528, var2);
+    eq104_.addAddend(-1, q104_);
+    eq104_.addAddend(-0.17911003633714528, variable);
     eq104_.setScalar(0.5534117385231038);
     _inputQuery.addEquation(eq104_);
+    set4.insert(q104_);
     unsigned q105_ = _inputQuery.getNumberOfVariables();
     _inputQuery.setNumberOfVariables(q105_ + 1);
     _inputQuery.setLowerBound(q105_, -100.0);
     _inputQuery.setUpperBound(q105_, 100.0);
     Equation eq105_;
-    eq105_.addAddend(1, q105_);
-    eq105_.addAddend(-0.15841276484258868, var2);
+    eq105_.addAddend(-1, q105_);
+    eq105_.addAddend(-0.15841276484258868, variable);
     eq105_.setScalar(0.5802166346398685);
     _inputQuery.addEquation(eq105_);
+    set4.insert(q105_);
     unsigned q106_ = _inputQuery.getNumberOfVariables();
     _inputQuery.setNumberOfVariables(q106_ + 1);
     _inputQuery.setLowerBound(q106_, -100.0);
     _inputQuery.setUpperBound(q106_, 100.0);
     Equation eq106_;
-    eq106_.addAddend(1, q106_);
-    eq106_.addAddend(-0.13805388170120766, var2);
+    eq106_.addAddend(-1, q106_);
+    eq106_.addAddend(-0.13805388170120766, variable);
     eq106_.setScalar(0.6109650924794012);
     _inputQuery.addEquation(eq106_);
+    set4.insert(q106_);
     unsigned q107_ = _inputQuery.getNumberOfVariables();
     _inputQuery.setNumberOfVariables(q107_ + 1);
     _inputQuery.setLowerBound(q107_, -100.0);
     _inputQuery.setUpperBound(q107_, 100.0);
     Equation eq107_;
-    eq107_.addAddend(1, q107_);
-    eq107_.addAddend(-0.11877226533845185, var2);
+    eq107_.addAddend(-1, q107_);
+    eq107_.addAddend(-0.11877226533845185, variable);
     eq107_.setScalar(0.6442388785013329);
     _inputQuery.addEquation(eq107_);
+    set4.insert(q107_);
     unsigned q108_ = _inputQuery.getNumberOfVariables();
     _inputQuery.setNumberOfVariables(q108_ + 1);
     _inputQuery.setLowerBound(q108_, -100.0);
     _inputQuery.setUpperBound(q108_, 100.0);
     Equation eq108_;
-    eq108_.addAddend(1, q108_);
-    eq108_.addAddend(-0.10983042222425944, var2);
+    eq108_.addAddend(-1, q108_);
+    eq108_.addAddend(-0.10983042222425944, variable);
     eq108_.setScalar(0.6606306476130153);
     _inputQuery.addEquation(eq108_);
+    set4.insert(q108_);
     unsigned q109_ = _inputQuery.getNumberOfVariables();
     _inputQuery.setNumberOfVariables(q109_ + 1);
     _inputQuery.setLowerBound(q109_, -100.0);
     _inputQuery.setUpperBound(q109_, 100.0);
     Equation eq109_;
-    eq109_.addAddend(1, q109_);
-    eq109_.addAddend(-0.040470623980445174, var2);
+    eq109_.addAddend(-1, q109_);
+    eq109_.addAddend(-0.040470623980445174, variable);
     eq109_.setScalar(0.8313480269902461);
     _inputQuery.addEquation(eq109_);
+    set4.insert(q109_);
     unsigned q110_ = _inputQuery.getNumberOfVariables();
     _inputQuery.setNumberOfVariables(q110_ + 1);
     _inputQuery.setLowerBound(q110_, -100.0);
     _inputQuery.setUpperBound(q110_, 100.0);
     Equation eq110_;
-    eq110_.addAddend(1, q110_);
-    eq110_.addAddend(-0.03229299282395175, var2);
+    eq110_.addAddend(-1, q110_);
+    eq110_.addAddend(-0.03229299282395175, variable);
     eq110_.setScalar(0.8578503415691678);
     _inputQuery.addEquation(eq110_);
+    set4.insert(q110_);
     unsigned q111_ = _inputQuery.getNumberOfVariables();
     _inputQuery.setNumberOfVariables(q111_ + 1);
     _inputQuery.setLowerBound(q111_, -100.0);
     _inputQuery.setUpperBound(q111_, 100.0);
     Equation eq111_;
-    eq111_.addAddend(1, q111_);
-    eq111_.addAddend(-0.025668092163887983, var2);
+    eq111_.addAddend(-1, q111_);
+    eq111_.addAddend(-0.025668092163887983, variable);
     eq111_.setScalar(0.8809372759083436);
     _inputQuery.addEquation(eq111_);
+    set4.insert(q111_);
     unsigned q112_ = _inputQuery.getNumberOfVariables();
     _inputQuery.setNumberOfVariables(q112_ + 1);
     _inputQuery.setLowerBound(q112_, -100.0);
     _inputQuery.setUpperBound(q112_, 100.0);
     Equation eq112_;
-    eq112_.addAddend(1, q112_);
-    eq112_.addAddend(-0.02033951725545943, var2);
+    eq112_.addAddend(-1, q112_);
+    eq112_.addAddend(-0.02033951725545943, variable);
     eq112_.setScalar(0.9008072241656719);
     _inputQuery.addEquation(eq112_);
+    set4.insert(q112_);
     unsigned q113_ = _inputQuery.getNumberOfVariables();
     _inputQuery.setNumberOfVariables(q113_ + 1);
     _inputQuery.setLowerBound(q113_, -100.0);
     _inputQuery.setUpperBound(q113_, 100.0);
     Equation eq113_;
-    eq113_.addAddend(1, q113_);
-    eq113_.addAddend(-0.016077813562956105, var2);
+    eq113_.addAddend(-1, q113_);
+    eq113_.addAddend(-0.016077813562956105, variable);
     eq113_.setScalar(0.9177391169334725);
     _inputQuery.addEquation(eq113_);
+    set4.insert(q113_);
     unsigned q114_ = _inputQuery.getNumberOfVariables();
     _inputQuery.setNumberOfVariables(q114_ + 1);
     _inputQuery.setLowerBound(q114_, -100.0);
     _inputQuery.setUpperBound(q114_, 100.0);
     Equation eq114_;
-    eq114_.addAddend(1, q114_);
-    eq114_.addAddend(-0.012684539525458829, var2);
+    eq114_.addAddend(-1, q114_);
+    eq114_.addAddend(-0.012684539525458829, variable);
     eq114_.setScalar(0.932049037105814);
     _inputQuery.addEquation(eq114_);
+    set4.insert(q114_);
     unsigned q115_ = _inputQuery.getNumberOfVariables();
     _inputQuery.setNumberOfVariables(q115_ + 1);
     _inputQuery.setLowerBound(q115_, -100.0);
     _inputQuery.setUpperBound(q115_, 100.0);
     Equation eq115_;
-    eq115_.addAddend(1, q115_);
-    eq115_.addAddend(-0.00890273748673438, var2);
+    eq115_.addAddend(-1, q115_);
+    eq115_.addAddend(-0.00890273748673438, variable);
     eq115_.setScalar(0.9490553646042065);
     _inputQuery.addEquation(eq115_);
+    set4.insert(q115_);
     unsigned q116_ = _inputQuery.getNumberOfVariables();
     _inputQuery.setNumberOfVariables(q116_ + 1);
     _inputQuery.setLowerBound(q116_, -100.0);
     _inputQuery.setUpperBound(q116_, 100.0);
     Equation eq116_;
-    eq116_.addAddend(1, q116_);
-    eq116_.addAddend(-0.005501670887814405, var2);
+    eq116_.addAddend(-1, q116_);
+    eq116_.addAddend(-0.005501670887814405, variable);
     eq116_.setScalar(0.9658501156231741);
     _inputQuery.addEquation(eq116_);
+    set4.insert(q116_);
     unsigned q117_ = _inputQuery.getNumberOfVariables();
     _inputQuery.setNumberOfVariables(q117_ + 1);
     _inputQuery.setLowerBound(q117_, -100.0);
     _inputQuery.setUpperBound(q117_, 100.0);
     Equation eq117_;
-    eq117_.addAddend(1, q117_);
-    eq117_.addAddend(-0.003390707677573013, var2);
+    eq117_.addAddend(-1, q117_);
+    eq117_.addAddend(-0.003390707677573013, variable);
     eq117_.setScalar(0.9773047373082717);
     _inputQuery.addEquation(eq117_);
+    set4.insert(q117_);
     unsigned q118_ = _inputQuery.getNumberOfVariables();
     _inputQuery.setNumberOfVariables(q118_ + 1);
     _inputQuery.setLowerBound(q118_, -100.0);
     _inputQuery.setUpperBound(q118_, 100.0);
     Equation eq118_;
-    eq118_.addAddend(1, q118_);
-    eq118_.addAddend(-0.0016654340025765723, var2);
+    eq118_.addAddend(-1, q118_);
+    eq118_.addAddend(-0.0016654340025765723, variable);
     eq118_.setScalar(0.9876154660829327);
     _inputQuery.addEquation(eq118_);
-
-    unsigned negative_q118_ = _inputQuery.getNumberOfVariables();
-    _inputQuery.setNumberOfVariables(negative_q118_+1);
-    _inputQuery.setLowerBound(negative_q118_,-100.0);
-    _inputQuery.setUpperBound(negative_q118_,100.0);
-    Equation negative_eq118_;
-    negative_eq118_.addAddend(1,q118_);
-    negative_eq118_.addAddend(1,negative_q118_);
-    negative_eq118_.setScalar(0);
-    _inputQuery.addEquation(negative_eq118_);
-    set4.insert(negative_q118_);
-
-    unsigned negative_q117_ = _inputQuery.getNumberOfVariables();
-    _inputQuery.setNumberOfVariables(negative_q117_+1);
-    _inputQuery.setLowerBound(negative_q117_,-100.0);
-    _inputQuery.setUpperBound(negative_q117_,100.0);
-    Equation negative_eq117_;
-    negative_eq117_.addAddend(1,q117_);
-    negative_eq117_.addAddend(1,negative_q117_);
-    negative_eq117_.setScalar(0);
-    _inputQuery.addEquation(negative_eq117_);
-    set4.insert(negative_q117_);
-
-    unsigned negative_q116_ = _inputQuery.getNumberOfVariables();
-    _inputQuery.setNumberOfVariables(negative_q116_+1);
-    _inputQuery.setLowerBound(negative_q116_,-100.0);
-    _inputQuery.setUpperBound(negative_q116_,100.0);
-    Equation negative_eq116_;
-    negative_eq116_.addAddend(1,q116_);
-    negative_eq116_.addAddend(1,negative_q116_);
-    negative_eq116_.setScalar(0);
-    _inputQuery.addEquation(negative_eq116_);
-    set4.insert(negative_q116_);
-
-    unsigned negative_q115_ = _inputQuery.getNumberOfVariables();
-    _inputQuery.setNumberOfVariables(negative_q115_+1);
-    _inputQuery.setLowerBound(negative_q115_,-100.0);
-    _inputQuery.setUpperBound(negative_q115_,100.0);
-    Equation negative_eq115_;
-    negative_eq115_.addAddend(1,q115_);
-    negative_eq115_.addAddend(1,negative_q115_);
-    negative_eq115_.setScalar(0);
-    _inputQuery.addEquation(negative_eq115_);
-    set4.insert(negative_q115_);
-
-    unsigned negative_q114_ = _inputQuery.getNumberOfVariables();
-    _inputQuery.setNumberOfVariables(negative_q114_+1);
-    _inputQuery.setLowerBound(negative_q114_,-100.0);
-    _inputQuery.setUpperBound(negative_q114_,100.0);
-    Equation negative_eq114_;
-    negative_eq114_.addAddend(1,q114_);
-    negative_eq114_.addAddend(1,negative_q114_);
-    negative_eq114_.setScalar(0);
-    _inputQuery.addEquation(negative_eq114_);
-    set4.insert(negative_q114_);
-
-    unsigned negative_q113_ = _inputQuery.getNumberOfVariables();
-    _inputQuery.setNumberOfVariables(negative_q113_+1);
-    _inputQuery.setLowerBound(negative_q113_,-100.0);
-    _inputQuery.setUpperBound(negative_q113_,100.0);
-    Equation negative_eq113_;
-    negative_eq113_.addAddend(1,q113_);
-    negative_eq113_.addAddend(1,negative_q113_);
-    negative_eq113_.setScalar(0);
-    _inputQuery.addEquation(negative_eq113_);
-    set4.insert(negative_q113_);
-
-    unsigned negative_q112_ = _inputQuery.getNumberOfVariables();
-    _inputQuery.setNumberOfVariables(negative_q112_+1);
-    _inputQuery.setLowerBound(negative_q112_,-100.0);
-    _inputQuery.setUpperBound(negative_q112_,100.0);
-    Equation negative_eq112_;
-    negative_eq112_.addAddend(1,q112_);
-    negative_eq112_.addAddend(1,negative_q112_);
-    negative_eq112_.setScalar(0);
-    _inputQuery.addEquation(negative_eq112_);
-    set4.insert(negative_q112_);
-
-    unsigned negative_q111_ = _inputQuery.getNumberOfVariables();
-    _inputQuery.setNumberOfVariables(negative_q111_+1);
-    _inputQuery.setLowerBound(negative_q111_,-100.0);
-    _inputQuery.setUpperBound(negative_q111_,100.0);
-    Equation negative_eq111_;
-    negative_eq111_.addAddend(1,q111_);
-    negative_eq111_.addAddend(1,negative_q111_);
-    negative_eq111_.setScalar(0);
-    _inputQuery.addEquation(negative_eq111_);
-    set4.insert(negative_q111_);
-
-    unsigned negative_q110_ = _inputQuery.getNumberOfVariables();
-    _inputQuery.setNumberOfVariables(negative_q110_+1);
-    _inputQuery.setLowerBound(negative_q110_,-100.0);
-    _inputQuery.setUpperBound(negative_q110_,100.0);
-    Equation negative_eq110_;
-    negative_eq110_.addAddend(1,q110_);
-    negative_eq110_.addAddend(1,negative_q110_);
-    negative_eq110_.setScalar(0);
-    _inputQuery.addEquation(negative_eq110_);
-    set4.insert(negative_q110_);
-
-    unsigned negative_q109_ = _inputQuery.getNumberOfVariables();
-    _inputQuery.setNumberOfVariables(negative_q109_+1);
-    _inputQuery.setLowerBound(negative_q109_,-100.0);
-    _inputQuery.setUpperBound(negative_q109_,100.0);
-    Equation negative_eq109_;
-    negative_eq109_.addAddend(1,q109_);
-    negative_eq109_.addAddend(1,negative_q109_);
-    negative_eq109_.setScalar(0);
-    _inputQuery.addEquation(negative_eq109_);
-    set4.insert(negative_q109_);
-
-    unsigned negative_q108_ = _inputQuery.getNumberOfVariables();
-    _inputQuery.setNumberOfVariables(negative_q108_+1);
-    _inputQuery.setLowerBound(negative_q108_,-100.0);
-    _inputQuery.setUpperBound(negative_q108_,100.0);
-    Equation negative_eq108_;
-    negative_eq108_.addAddend(1,q108_);
-    negative_eq108_.addAddend(1,negative_q108_);
-    negative_eq108_.setScalar(0);
-    _inputQuery.addEquation(negative_eq108_);
-    set4.insert(negative_q108_);
-
-    unsigned negative_q107_ = _inputQuery.getNumberOfVariables();
-    _inputQuery.setNumberOfVariables(negative_q107_+1);
-    _inputQuery.setLowerBound(negative_q107_,-100.0);
-    _inputQuery.setUpperBound(negative_q107_,100.0);
-    Equation negative_eq107_;
-    negative_eq107_.addAddend(1,q107_);
-    negative_eq107_.addAddend(1,negative_q107_);
-    negative_eq107_.setScalar(0);
-    _inputQuery.addEquation(negative_eq107_);
-    set4.insert(negative_q107_);
-    unsigned negative_q106_ = _inputQuery.getNumberOfVariables();
-    _inputQuery.setNumberOfVariables(negative_q106_+1);
-    _inputQuery.setLowerBound(negative_q106_,-100.0);
-    _inputQuery.setUpperBound(negative_q106_,100.0);
-    Equation negative_eq106_;
-    negative_eq106_.addAddend(1,q106_);
-    negative_eq106_.addAddend(1,negative_q106_);
-    negative_eq106_.setScalar(0);
-    _inputQuery.addEquation(negative_eq106_);
-    set4.insert(negative_q106_);
-    unsigned negative_q105_ = _inputQuery.getNumberOfVariables();
-    _inputQuery.setNumberOfVariables(negative_q105_+1);
-    _inputQuery.setLowerBound(negative_q105_,-100.0);
-    _inputQuery.setUpperBound(negative_q105_,100.0);
-    Equation negative_eq105_;
-    negative_eq105_.addAddend(1,q105_);
-    negative_eq105_.addAddend(1,negative_q105_);
-    negative_eq105_.setScalar(0);
-    _inputQuery.addEquation(negative_eq105_);
-    set4.insert(negative_q105_);
-    unsigned negative_q104_ = _inputQuery.getNumberOfVariables();
-    _inputQuery.setNumberOfVariables(negative_q104_+1);
-    _inputQuery.setLowerBound(negative_q104_,-100.0);
-    _inputQuery.setUpperBound(negative_q104_,100.0);
-    Equation negative_eq104_;
-    negative_eq104_.addAddend(1,q104_);
-    negative_eq104_.addAddend(1,negative_q104_);
-    negative_eq104_.setScalar(0);
-    _inputQuery.addEquation(negative_eq104_);
-    set4.insert(negative_q104_);
-    unsigned negative_q103_ = _inputQuery.getNumberOfVariables();
-    _inputQuery.setNumberOfVariables(negative_q103_+1);
-    _inputQuery.setLowerBound(negative_q103_,-100.0);
-    _inputQuery.setUpperBound(negative_q103_,100.0);
-    Equation negative_eq103_;
-    negative_eq103_.addAddend(1,q103_);
-    negative_eq103_.addAddend(1,negative_q103_);
-    negative_eq103_.setScalar(0);
-    _inputQuery.addEquation(negative_eq103_);
-    set4.insert(negative_q103_);
-    unsigned negative_q102_ = _inputQuery.getNumberOfVariables();
-    _inputQuery.setNumberOfVariables(negative_q102_+1);
-    _inputQuery.setLowerBound(negative_q102_,-100.0);
-    _inputQuery.setUpperBound(negative_q102_,100.0);
-    Equation negative_eq102_;
-    negative_eq102_.addAddend(1,q103_);
-    negative_eq102_.addAddend(1,negative_q102_);
-    negative_eq102_.setScalar(0);
-    _inputQuery.addEquation(negative_eq102_);
-    set4.insert(negative_q102_);
-    unsigned negative_q101_ = _inputQuery.getNumberOfVariables();
-    _inputQuery.setNumberOfVariables(negative_q101_+1);
-    _inputQuery.setLowerBound(negative_q101_,-100.0);
-    _inputQuery.setUpperBound(negative_q101_,100.0);
-    Equation negative_eq101_;
-    negative_eq101_.addAddend(1,q101_);
-    negative_eq101_.addAddend(1,negative_q101_);
-    negative_eq101_.setScalar(0);
-    _inputQuery.addEquation(negative_eq101_);
-    set4.insert(negative_q101_);
+    set4.insert(q118_);
 
     unsigned q_at_x_ = _inputQuery.getNumberOfVariables();
     _inputQuery.setNumberOfVariables(q_at_x_+1);
@@ -705,6 +532,8 @@ unsigned Marabou::sigmoid_anagha_final(unsigned var2)
 
     unsigned answer_ = _inputQuery.getNumberOfVariables();
     _inputQuery.setNumberOfVariables(answer_+1);
+//    _inputQuery.setLowerBound(answer_,0.0);
+//    _inputQuery.setUpperBound(answer_,1.0);
     Equation eq40_;
     eq40_.addAddend(1,answer_);
     eq40_.addAddend(-1,neg_variable_min3);
@@ -777,13 +606,15 @@ void Marabou::prepareInputQuery() {
         // For now, assume the network is given in ACAS format
         _acasParser = new AcasParser(networkFilePath);
         _acasParser->generateQueryAnagha(_inputQuery);
-        _inputQuery.constructNetworkLevelReasoner();
 
+        _inputQuery.constructNetworkLevelReasoner();
+        _inputQuery.setLowerBound(3,-10);
+        _inputQuery.setUpperBound(3,10);
+        _inputQuery.setLowerBound(11,-10);
+        _inputQuery.setUpperBound(11,10);
 
         List<unsigned> outlist1;
         List<unsigned> outlist2;
-        Set<unsigned> outSet1;
-        Set<unsigned> outSet2;
 
         unsigned outputLayerSize = _inputQuery.getNumOutputVariables();
         double result;
@@ -791,29 +622,28 @@ void Marabou::prepareInputQuery() {
         unsigned counter = 0;
         //TODO: what do id1 and id2 really do? why is it 2 lists independent of the number of classes?
         //ANSWER (assume): it is the two copies of the neural net!
-        Map<unsigned, unsigned> id1;
-        unsigned idCounter1 = 1;
-        Map<unsigned, unsigned> id2;
-        unsigned idCounter2 = 1;
         for (const auto &pair: _inputQuery._outputIndexToVariable) {
             if (counter < outputLayerSize / 2) {
                 outlist1.append(pair.second);
-                outSet1.insert(pair.second);
-                id1.insert(pair.second, idCounter1);
-                ++idCounter1;
                 ++counter;
             } else {
                 outlist2.append(pair.second);
-                outSet2.insert(pair.second);
-
-                id2.insert(pair.second, idCounter2);
-                ++idCounter2;
                 ++counter;
             }
         }
+
         //TODO my variables
-        const unsigned targetClass1 = 0;
-        const unsigned targetClass2 = 1;
+        unsigned targetClass1, targetClass2;
+        double conf_from_user, epsilon_from_user;
+        String propertyFilePath = Options::get()->getString(Options::PROPERTY_FILE_PATH);
+        if (propertyFilePath != "") {
+            printf("Property: %s\n", propertyFilePath.ascii()); // called
+            PropertyParser().parse(propertyFilePath, conf_from_user, epsilon_from_user, targetClass1, targetClass2);
+            printf("conf_from_user = %f epsilon_from_user = %f", conf_from_user, epsilon_from_user);
+        } else
+            printf("Property: None\n");
+
+        printf("\n");
         unsigned conf1;
         unsigned i = 0;
         for (const auto &outVar1: outlist1) {
@@ -821,48 +651,131 @@ void Marabou::prepareInputQuery() {
 
             Set<unsigned> maxSet1;
             for (const auto &outVar2: outlist1) {
-                if (&outVar1 != &outVar2) {
-                    maxSet1.insert(outVar2);
+                if (outVar1 == outVar2) continue;
 
-                    //make the targetclass the highest value.
-                    Equation predictRightClass(Equation::GE);
-                    predictRightClass.addAddend(1, outVar1);
-                    predictRightClass.addAddend(-1, outVar2);
-                    predictRightClass.setScalar(1e-6);
-                    _inputQuery.addEquation(predictRightClass);
-                }
+                maxSet1.insert(outVar2);
+                //make the targetclass the highest value.
+                Equation predictRightClass(Equation::GE);
+                predictRightClass.addAddend(1, outVar1);
+                predictRightClass.addAddend(-1, outVar2);
+                predictRightClass.setScalar(1e-6);
+                _inputQuery.addEquation(predictRightClass);
             }
-            unsigned max_var1 = _inputQuery.getNumberOfVariables();
-            _inputQuery.setNumberOfVariables(max_var1 + 1);
-            _inputQuery.setUpperBound(max_var1, 1000.0);
-            _inputQuery.setLowerBound(max_var1, -1000.0); //TODO: what is the meaning of this?
-            auto *max1 = new MaxConstraint(max_var1, maxSet1);//variable number max_var1 is the maximum of all other outputs
-            _inputQuery.addPiecewiseLinearConstraint(max1);//TODO: can be bounded with the range of the variables
 
-            unsigned var2 = _inputQuery.getNumberOfVariables();
-            _inputQuery.setNumberOfVariables(var2 + 1);
-            _inputQuery.setUpperBound(var2, 1000.0);
-            _inputQuery.setLowerBound(var2, -1000.0); //TODO: what is the meaning of this?
-            Equation equation2;
-            equation2.addAddend(1, var2);//var2 - outVar1 + max_var1 = log(output_dimensions)
-            equation2.addAddend(-1, outVar1);//==> var2 = log(output_dimensions) + outVar1 - max_var1
-            equation2.addAddend(1, max_var1);//TODO: still dont get it, probably something with the softmax stuff
-            equation2.setScalar(result);//TODO can be bounded with bounds of variables
-            _inputQuery.addEquation(equation2);
 
-            conf1 = sigmoid_anagha_final(var2);//redefined, new number of variables (or number or last one)
 
+            //TODO: the softmax approximation is sigmoid(var_i - LSE (rest))
+            // LSE(rest) is lower bounded by max(rest) ==> we upper bound confidence with sig(var_i - max(rest))
+            // We can improve our estimate of LSE(rest) by adding a term like (max(rest),(max(rest)+log(2)-(2*max(rest)-rest1-rest2)/2))
+            // two line segments, one we already had, one adds a line segment where we have the range of the rest as slope and log(2) as offset
+
+            //(max(rest)+log(2)-(2*max(rest)-rest1-rest2)/2) = (log(2)+rest1/2+rest2/2
+            // ==> log(n) +
+
+            //TODO: LSE approximation:
+            // LSE(x_1,x_2,x_3,...) >= max(x) original approx
+            // new approach, consider LSE(x_1-x_min,x_2-x_min,...)+x_min = LSE(x_i)
+            // We have LSE(x_1-x_min,... 0, x_j-x_min,...) now, so one less degree of freedom.
+
+            //TODO special case for 2 numbers (three classes)
+            // For 2 numbers, we now have only the function LSE(x1,x2) = LSE(x_max-x_min,0)+x_min = log(e^(x_max-x_min)+e^0)+x_min = f(x_r)+x_min
+            // We approximate this function with:
+            // f(x_r) >= x_r (non-negative)
+            // f(x_r) >= log(2) + x_r/2 (slope at f(0)
+            // ==>
+            // f(x_r) >= max(x_r,log(2)-x_r/2) = max(x_r,log(2)+x_r/2)
+            // f(x_r) + x_min >= max(x_r + x_min,log(2)+x_r/2 + x_min)
+            // f(x_r) + x_min >= max(x_max,log(2)+x_max/2 + x_min/2)
+            // f(x_r) + x_min >= max(x_max,log(2)+x_max/2 + (x1 + x2 - x_max)/2)
+            // f(x_r) + x_min >= max(x_max,log(2)+x_max/2 + x1/2 + x2/2 - x_max/2)
+            // f(x_r) + x_min >= max(x_max,log(2) + x1/2 + x2/2)
+
+            // x_r is the range x_max - x_min (for two numbers: 2*x_max - x_1 - x_2)
+
+            unsigned temp_conf;
+
+            if(outlist1.size() == 3){
+                //TODO: encode the variable lse_taylor1 = log(2)+0.5*x_1+0.5*x_2
+                // hint: if only one x is left, we have log(0) + .5*x, so we only want to add this for three variables
+                // reformulate to lse_taylor1 - .5*x_1 - .5*x_2 <= log(2)
+                unsigned lse_taylor1 = _inputQuery.getNumberOfVariables();
+                _inputQuery.setNumberOfVariables(lse_taylor1 + 1);
+                _inputQuery.setUpperBound(lse_taylor1, 1000.0);
+                _inputQuery.setLowerBound(lse_taylor1, -1000.0);
+                Equation lse_taylor_approximation(Equation::LE);
+                //TODO: we relax this constraint to >= and <= constraints, otherwise marabou dies
+                lse_taylor_approximation.addAddend(1, lse_taylor1);
+                for (const auto &outVar2: outlist1)
+                    if (&outVar1 != &outVar2)
+                        lse_taylor_approximation.addAddend(-0.5, outVar2);
+                lse_taylor_approximation.setScalar(std::log(2));
+                _inputQuery.addEquation(lse_taylor_approximation);
+
+                Equation lse_taylor_approximation2(Equation::GE);
+                //TODO: we relax this constraint to allow smaller values, otherwise marabou dies
+                lse_taylor_approximation2.addAddend(1, lse_taylor1);
+                for (const auto &outVar2: outlist1)
+                    if (&outVar1 != &outVar2)
+                        lse_taylor_approximation2.addAddend(-0.5, outVar2);
+                lse_taylor_approximation2.setScalar(std::log(2));
+                _inputQuery.addEquation(lse_taylor_approximation2);
+
+                maxSet1.insert(lse_taylor1);
+                unsigned lse_max = _inputQuery.getNumberOfVariables();//TODO marabou does not like this constraint!
+                _inputQuery.setNumberOfVariables(lse_max + 1);
+                _inputQuery.setUpperBound(lse_max, 1000.0);
+                _inputQuery.setLowerBound(lse_max, -1000.0);
+                auto *max_lse_constraint = new MaxConstraint(lse_max, maxSet1);
+                _inputQuery.addPiecewiseLinearConstraint(max_lse_constraint);
+                printf("\napproximated lse (for 3 classes) = %d", lse_max);
+
+                unsigned sigmoid_input = _inputQuery.getNumberOfVariables();
+                _inputQuery.setNumberOfVariables(sigmoid_input + 1);
+                _inputQuery.setUpperBound(sigmoid_input, 1000.0);
+                _inputQuery.setLowerBound(sigmoid_input, -1000.0);
+
+                Equation equation3;
+                equation3.addAddend(+1, lse_max);
+                equation3.addAddend(-1, outVar1);
+                equation3.addAddend(1, sigmoid_input); //lse_approx - outVar1 + max_var1 = log(output_dimensions)
+                equation3.setScalar(0);
+                _inputQuery.addEquation(equation3);
+                temp_conf = sigmoid_anagha_final(sigmoid_input);//redefined, new number of variables (or number or last one)
+            }else{
+
+                unsigned max_var1 = _inputQuery.getNumberOfVariables();
+                _inputQuery.setNumberOfVariables(max_var1 + 1);
+                _inputQuery.setUpperBound(max_var1, 1000.0);
+                _inputQuery.setLowerBound(max_var1, -1000.0); //TODO: what is the meaning of this?
+                auto *max1 = new MaxConstraint(max_var1, maxSet1);//variable number max_var1 is the maximum of all other outputs
+                _inputQuery.addPiecewiseLinearConstraint(max1);//TODO: can be bounded with the range of the variables
+
+                printf("\nmax input of other classes = %d", max_var1);
+                signed lse_approx = _inputQuery.getNumberOfVariables();
+                _inputQuery.setNumberOfVariables(lse_approx + 1);
+                _inputQuery.setUpperBound(lse_approx, 1000.0);
+                _inputQuery.setLowerBound(lse_approx, -1000.0); //TODO: what is the meaning of this?
+                Equation equation2;
+                equation2.addAddend(1, lse_approx); //lse_approx - outVar1 + max_var1 = log(output_dimensions)
+                equation2.addAddend(-1, outVar1); // ==> lse_approx = log(output_dimensions) + outVar1 - max_var1
+                equation2.addAddend(+1, max_var1); //TODO: still dont get it, probably something with the softmax stuff
+                equation2.setScalar(0);//TODO can be bounded with bounds of variables
+                _inputQuery.addEquation(equation2);
+                printf("\napproximated lse = %d", lse_approx);
+                temp_conf = sigmoid_anagha_final(lse_approx);//redefined, new number of variables (or number or last one)
+            }
+//            if(i++ != targetClass1) continue;
+            conf1 = temp_conf;
             printf("\nconfidence = %d", conf1);
 
         }
 
         i = 0;
-        for (const auto &outVar1: outlist1) {
+        for (const auto &outVar1: outlist2) {
             if (i++ != targetClass2) continue;//encode this stuff only for the interesting class
 
-            for (const auto &outVar2: outlist1) {
+            for (const auto &outVar2: outlist2) {
                 if (&outVar1 != &outVar2) {
-
                     //make the targetclass the highest value.
                     Equation predictRightClass(Equation::GE);
                     predictRightClass.addAddend(1, outVar1);
@@ -876,52 +789,46 @@ void Marabou::prepareInputQuery() {
         /*
           Step 2: extract the property in question
         */
-        double conf_from_user, epsilon_from_user;//TODO just read the tiny txt file with the property (maybe not needed anymore?)
-        String propertyFilePath = Options::get()->getString(Options::PROPERTY_FILE_PATH);
-        if (propertyFilePath != "") {
-            printf("Property: %s\n", propertyFilePath.ascii()); // called
-            PropertyParser().parse(propertyFilePath, conf_from_user, epsilon_from_user);
-            printf("conf_from_user = %f epsilon_from_user = %f", conf_from_user, epsilon_from_user);
-        } else
-            printf("Property: None\n");
-
-        printf("\n");
 
         unsigned counterX = 0;
         unsigned counterInVar = _inputQuery.getNumInputVariables() / 2;//TODO the variable directly after the inputs? not used? the first variable in the copy?
-        _inputQuery.setUpperBound(counterInVar, 10000.0);
-        _inputQuery.setLowerBound(counterInVar, -10000.0);
+//        _inputQuery.setUpperBound(counterInVar, 10000.0);
+//        _inputQuery.setLowerBound(counterInVar, -10000.0);
 
         //TODO: ALTERNATIVE CODE SNIPPET FOR THE LOOP STARTING HERE
         while(counterX < (_inputQuery.getNumInputVariables())/2)
         {
 
-            unsigned aa = _inputQuery.getNumberOfVariables();//TODO: aa is a new variable
-            _inputQuery.setNumberOfVariables(aa+1);
-            _inputQuery.setUpperBound(aa,epsilon_from_user);
-            _inputQuery.setLowerBound(aa,-epsilon_from_user);
-            Equation equation4;
-            equation4.addAddend(1, aa);//TODO: aa - input1 + input2 = 0 (aa is the difference)
-            equation4.addAddend(-1, (counterX));
-            equation4.addAddend(1, (counterX+counterInVar));
-            equation4.setScalar(0);
-            _inputQuery.addEquation(equation4);
+            Equation distanceMin(Equation::LE);
+            distanceMin.addAddend(-1,counterX);
+            distanceMin.addAddend(1,counterX + counterInVar);
+            distanceMin.setScalar(epsilon_from_user);
+            //TODO: de-normalize epsilon: distanceMax.setScalar(epsilon_from_user/(_inputQuery.getUpperBound(counterX)-_inputQuery.getLowerBound(counterX)));
+            _inputQuery.addEquation(distanceMin);
+
+            Equation distanceMax(Equation::LE);
+            distanceMax.addAddend(1,counterX);
+            distanceMax.addAddend(-1,counterX + counterInVar);
+            distanceMax.setScalar(epsilon_from_user);
+            //TODO: de-normalize epsilon: distanceMax.setScalar(epsilon_from_user/(_inputQuery.getUpperBound(counterX)-_inputQuery.getLowerBound(counterX)));
+            _inputQuery.addEquation(distanceMax);
 
             ++counterX;
         }
         //TODO:ALTERNATIVE CODE SNIPPET ENDING HERE
 
         /*Property starts here*/
-
-        double conf_from_user_app = conf_from_user - 0.1717; //TODO: apparent correction for 3 class confidence issue
-        Equation equation44(Equation::GE);
-        equation44.addAddend(1, conf1);
-        equation44.setScalar(conf_from_user_app);
-        _inputQuery.addEquation(equation44);//TODO: max confidence >= user defined confidence
+        //TODO new correction from PETER:
+        double conf_from_user_app = conf_from_user;// - 0.0556; //TODO: apparent correction for 3 class confidence issue
+        Equation confidenceThreshold(Equation::GE);
+        confidenceThreshold.addAddend(1, conf1);
+        confidenceThreshold.setScalar(conf_from_user_app);
+        _inputQuery.addEquation(confidenceThreshold);//TODO: max confidence >= user defined confidence
 
 
 
     }
+    sleep(5);
     if (Options::get()->getBool(Options::DEBUG_ASSIGNMENT))
         importDebuggingSolution();
 
@@ -996,6 +903,10 @@ void Marabou::solveQuery()
         _engine.extractSolution(_inputQuery);
 }
 
+double rescaleToOriginal(double x, double originalMin, double originalMax, double scaledMin, double scaledMax) {
+    return ((x - scaledMin) * (originalMax - originalMin)) / (scaledMax - scaledMin) + originalMin;
+}
+
 void Marabou::displayResults(unsigned long long microSecondsElapsed) const
 {
     Engine::ExitCode result = _engine.getExitCode();
@@ -1004,16 +915,36 @@ void Marabou::displayResults(unsigned long long microSecondsElapsed) const
     if (result == Engine::UNSAT)
     {
         resultString = "unsat";
-        printf("unsat\n");
+        printf("unsat :)\n");
     }
     else if (result == Engine::SAT)
     {
         resultString = "sat";
         printf("sat\n");
 
-        printf("\n\nInput assignment for _inputQuery:\n\n");
-        for (unsigned i = 0; i < _inputQuery.getNumInputVariables(); ++i)
-            printf("\tx%u = %lf\n", i, _inputQuery.getSolutionValue(_inputQuery.inputVariableByIndex(i)));
+        printf("\n\nRaw Input assignment for _inputQuery:\n\n");
+        for (unsigned i = 0; i < _inputQuery.getNumInputVariables(); ++i){
+            double min,max;
+            _acasParser->getRawInputRange(_inputQuery.inputVariableByIndex(i % (_inputQuery.getNumInputVariables()/2)), min, max);
+            double smin = _inputQuery.getLowerBound(_inputQuery.inputVariableByIndex(i));
+            double smax = _inputQuery.getUpperBound(_inputQuery.inputVariableByIndex(i));
+            if(i == _inputQuery.getNumInputVariables()/2)printf("\n");
+            printf("\tx%u = %lf [%lf,%lf]\n", i,
+                   rescaleToOriginal(_inputQuery.getSolutionValue(_inputQuery.inputVariableByIndex(i)),min,max,smin,smax),
+                   min,
+                   max);
+
+        }
+        printf("\n\tApproximate Confidence at input 1 (last variable in model): %lf\n",
+               _inputQuery.getSolutionValue(
+                               _inputQuery.getNumberOfVariables()-1));
+        printf("\tMinimum possible confidence at input 1 (with correction for 3 outputs): %lf\n",
+               _inputQuery.getSolutionValue(_inputQuery.getNumberOfVariables()-1)-0.0556);
+        printf("\n\tRaw Output values (always 6 variables outputted):\n");
+        for (unsigned output: _inputQuery.getOutputVariables()){
+            printf("\tx%u = %lf\n",output,_inputQuery.getSolutionValue(output));
+        }
+
 
         if (_inputQuery._networkLevelReasoner)
         {
