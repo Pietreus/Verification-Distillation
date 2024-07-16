@@ -55,8 +55,8 @@ def dataset_nnet_exporter(model: torch.nn.Module, file, dataset, comment: str = 
         # 1: Header text. This can be any number of lines so long as they begin with "//"
         f.write('//' + comment + "\n")
         # 2: Four values: Number of layers, number of inputs, number of outputs, and maximum layer size
-        f.write(f"{len(weights)}, {weights[0].shape[1]},"
-                f"{weights[-1].shape[0]},"
+        f.write(f"{len(weights)}, {weights[0].shape[0]},"
+                f"{weights[-1].shape[1]},"
                 f"{max([layer.shape[1] for layer in weights])}\n")
         # 3: A sequence of values describing the network layer sizes.
         # Begin with the input size, then the size of the first layer, second layer,
