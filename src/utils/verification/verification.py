@@ -1,117 +1,147 @@
 #TODO try to automate calls to marabou
 #0. build marabou into a convenient spot (gitignore!)
-
+import ast
 ## check if the folder "../../../marabou_build" exists
 ## if not call the shell script "./build_marabou.sh" and warn that the build will take a long time
 
 import os
 import subprocess
+import tempfile
+from typing import List
 
-# Define the path to the folder and the shell script
-marabou_path = "../../../Global_2Safety_with_Confidence/Marabou"
-folder_path = "../../../marabou_build"
-shell_script = "./build_marabou.sh"
+import torch
+from tqdm import tqdm
 
-# Check if the folder exists
-if not os.path.exists(folder_path):
-    print("The folder '../../../marabou_build' does not exist.")
-    print("Running the build script. This will take a long time...")
-
-    # Call the shell script
-    try:
-        subprocess.run([shell_script, marabou_path, folder_path], check=True)
-        print("Build completed successfully, continuing")
-    except subprocess.CalledProcessError as e:
-        print(f"An error occurred while running the build script: {e}")
-        exit(1)
-else:
-    print("The build folder already exists, continuing...")
+from src.utils.data.nnet_exporter import dataset_nnet_exporter
 
 
-#1. take a model export it in nnet format where it belongs
+def build_marabou():
+    # Define the path to the folder and the shell script
+    marabou_path = "../../../Global_2Safety_with_Confidence/Marabou"
+    folder_path = "../../../marabou_build"
+    shell_script = "./build_marabou.sh"
 
-#2. produce code for marabou to check whatever features
-#2.1 take the Marabou_query_prototype.cpp and copy it into the location of the build
-#2.2 use #include to load a snippet of generated code
-#2.3 generate C++ code as follows:
-#2.3.1 include a snippet for the confidence( depending on classes)
-#2.3.2 include a snippet for each variable, constraining the distance of the other output in that dimension
-# i.e.
-# unsigned var_dist = _inputQuery.getNumberOfVariables(); // TODO: aa is a new variable
-# _inputQuery.setNumberOfVariables(var_dist + 1);
-# _inputQuery.setUpperBound(var_dist, epsilon_from_user);
-# _inputQuery.setLowerBound(var_dist, -epsilon_from_user);
-# Equation equation4;
-# equation4.addAddend(1, var_dist); // TODO: aa - input1 + input2 = 0(aa is the difference)
-# equation4.addAddend(-1, (counterX));
-# equation4.addAddend(1, (counterX + counterInVar));
-# equation4.setScalar(0);
-# _inputQuery.addEquation(equation4);
+    # Check if the folder exists
+    if not os.path.exists(folder_path):
+        print("The folder '../../../marabou_build' does not exist.")
+        print("Running the build script. This will take a long time...")
 
-
-#
-#3. compile and run marabou
-#4. save output asynchronously
-#5. define necessary parameters to control all the behaviour
+        # Call the shell script
+        try:
+            subprocess.run([shell_script, marabou_path, folder_path], check=True)
+            print("Build completed successfully, continuing")
+        except subprocess.CalledProcessError as e:
+            print(f"An error occurred while running the build script: {e}")
+            exit(1)
+    else:
+        print("The build folder already exists, continuing...")
 
 
-def write_all_constraints(num_input_dims: int, distances: float | [float],
-                          num_output_dims: int, confidence_level: float) -> str:
-    if isinstance(distances, float):
-        distances = [distances] * num_input_dims
-    assert len(distances) == num_input_dims
-    assert 2 <= num_output_dims <= 3
-    full_string = ""
-    # constraints for all input dimensions
-    for index, distance in enumerate(distances):
-        full_string += write_variable_constraint(index, num_input_dims, distance)
+def verify_with_marabou(model: torch.nn.Module,
+                        dataset: torch.utils.data.Dataset, *args, **kwargs):
+    """
 
-    # confidence constraint
-    write_confidence_constraint(num_output_dims, confidence_level)
-
-    return full_string
-
-
-def write_confidence_constraint(num_output_dims: int, confidence_level: float, target_class: int) -> str:
-    assert 2 <= num_output_dims <= 3 # really making sure with this hack below
-    assert 0 <= target_class < num_output_dims
-    return (f"double confidence_level = {confidence_level - 0.1717 * (num_output_dims - 2)};\n"
-            f"Equation confidence_threshold(Equation::GE);\n"
-            f"confidence_threshold.addAddend(1,max_conf1);\n"  # this maybe can be replaced with the conf of output 1
-            f"confidence_threshold.setScalar(confidence_level);\n"
-            f"_inputQuery.addEquation(confidence_threshold);\n")
-            #TODO:
-            # we can just set a lower bound for the maximum as well!
-            # a lower bound for the confidence of target_class even!!!!
-            # FOR THIS WE MUST INJECT CODE:
-            # f"_inputQuery.setLowerBound(*confSet1 + {target_class},{confidence_level - 0.1717 * (num_output_dims -  2)})\n";
-            # for the second network, for two classes we can just set the upper bound of the confidence of class 1 to 0.5
-            # For 3 classes its a bit more tricky i fear, we could just make it 6 queries and say
-            # network 1 picks class 1, for network 2 class 2 < 1, class 3< 1 respectively
-#TODO i need to check if i need to generate an iterator as well!!
-
-def write_variable_constraint(index: int, num_input_dims: int, max_distance: float) -> str:
-    # TODO (REMINDER) WE CANNOT BREAK SYMMETRY WITH REGARDS TO DISTANCE
-    return (f"//maximum distance for variable {index} is {max_distance}\n"
-            f"unsigned var_dist = _inputQuery.getNumberOfVariables();\n"
-            f"_inputQuery.setNumberOfVariables(var_dist + 1);\n"
-            f"_inputQuery.setUpperBound(var_dist, {max_distance});\n"
-            f"_inputQuery.setLowerBound(var_dist, -{max_distance});\n"
-            f"Equation distanceConstraint;\n"
-            f"distanceConstraint.addAddend(1, var_dist); \n"
-            f"distanceConstraint.addAddend(-1, {index});\n"
-            f"distanceConstraint.addAddend(1, {index + num_input_dims});\n"
-            f"distanceConstraint.setScalar(0);\n"
-            f"_inputQuery.addEquation(distanceConstraint);\n\n")
+    :param model: the pytorch model to verify, will be converted to nnet Format.
+    :param dataset: the dataset for training. important for choosing input scales.
+    :param args: for verify_with_marabou_from_file
+    :param kwargs: for verify_with_marabou_from_file
+    :return:
+    """
+    temp_folder = tempfile.mkdtemp()
+    model_file = os.path.join(temp_folder, "model.nnet")
+    dataset_nnet_exporter(model, model_file, dataset, "")
+    verify_with_marabou_from_file(model_file, *args, **kwargs)
 
 
-#TODO the sigmoid is 17 equations defining line segments
-# then 18 equation defining more
-# then 18 "negative ones" more, which just define the negation of the 18 before
-# then a q_at_x variable which is hardcoded to -1? a negative q_at_x which is hardcoded to -.5, a zero which is 0  *<:^)
-# then we have fmax3 and 4 in both positive and negative.
-# then we take the max(-1,min(first 17 lines)) and max(.5,min(next 18 lines))
-# then we, for some reason, constrain the positive max + negative max = 0
-# finally, return answer = neg_min1 + pos_min2 - .5 ????
-# seems like there are a lot of unneeded variables
+def verify_with_marabou_from_file(model_file_nnet: str,
+                                  num_inputs: int,
+                                  num_classes: int,
+                                  epsilon: float,
+                                  confidence_lower_bound: float,
+                                  marabou_exec: str = "../../../marabou_build/Marabou",
+                                  input_lower_bounds: List[float] = None,
+                                  input_upper_bounds: List[float] = None):
+    """
+    Runs the marabou executable located at marabou_exec to verify robustness of the given network at the confidence level.
+    Returns either None or a tuple containing a counterexample to the property
+    :param model_file_nnet:
+    :param num_inputs: number of inputs dimensions of the network.
+    :param num_classes: number of output classes of the network.
+    :param epsilon: the radius of the L_inf ball around a given ball to check robustness in.
+    :param confidence_lower_bound: the lowest possible confidence to verify. Counterexpamples might exhibit slightly
+    lower confidence due to discretization errors.
+    :param marabou_exec: location of the built marabou executable. Must be the adapted version of this Project.
+    :param input_lower_bounds: a list of the length of inputs. each entry can be a numeric lower bound or None
+    :param input_upper_bounds: a list of the length of inputs. each entry can be a numeric lower bound or None
+    :return: None, if the model is robust given these parameters.
+    Otherwise, a tuple of two inputs and their outputs as counterexample.
+    """
 
+    # create a temp folder for the files to use as input
+    temp_folder = tempfile.mkdtemp()
+    bound_string = ""
+    if input_lower_bounds is not None:
+        assert len(input_lower_bounds) == len(input_upper_bounds) == num_inputs
+        bound_string += produce_bound_string(input_lower_bounds, ">=")
+
+    if input_lower_bounds is not None:
+        assert len(input_lower_bounds) == len(input_upper_bounds) == num_inputs
+        bound_string += produce_bound_string(input_upper_bounds, "<=")
+
+    property_files = []
+
+    for (c1, c2) in [(c1, c2) for c1 in range(num_classes) for c2 in range(num_classes)]:
+        if c1 == c2:
+            continue
+
+        property_file = os.path.join(temp_folder, "property_%d_%d.txt" % (c1, c2))
+        # write bound_string into property_file
+        with open(property_file, "w") as f:
+            f.write(f"conf={confidence_lower_bound}\n")
+            f.write(f"epsilon={epsilon}\n")
+            f.write(f"class1={c1}\n")
+            f.write(f"class2={c2}\n")
+            f.write("//bounds:")
+            f.write(f"{bound_string}")
+        property_files.append(property_file)
+    for property_file in tqdm(property_files):
+        # run a subprocess and check if its output contains the word "unsat"
+
+        # print(f"model file: {[marabou_exec, model_file_nnet, property_file]}")
+        result = subprocess.run([marabou_exec, model_file_nnet, property_file, "--verbosity=0"], check=False,
+                                capture_output=True, text=True)
+        # print(result)
+
+        output = result.stdout.strip()
+        # print(output)
+        # print("end")
+        if output == "unsat":
+            continue
+        try:
+            parsed_output = ast.literal_eval(output)
+            if isinstance(parsed_output, tuple) and len(parsed_output) == 4:
+                return parsed_output
+            else:
+                raise ValueError("Output is not a tuple of four vectors/lists")
+        except (SyntaxError, ValueError) as e:
+            raise ValueError(f"Failed to parse output: {output}") from e
+
+    return None
+
+
+def produce_bound_string(bound_list: List[float], sign: str = ">=") -> str:
+    bound_str = ""
+    for i, input_lower_bound in enumerate(bound_list):
+        if input_lower_bound is None:
+            continue
+
+        bound_str += f"\nx{i} {sign} {input_lower_bound}"
+    return bound_str
+
+
+if __name__ == "__main__":
+    print("Counter-Example:")
+    print(
+        verify_with_marabou_from_file("../../../Global_2Safety_with_Confidence/104k_student_noise_1_CE_2_KL_5_GAD_50"
+                                      ".nnet",
+                                      8, 3, 0.5, .5))
