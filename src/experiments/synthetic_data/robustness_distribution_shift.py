@@ -132,7 +132,6 @@ if __name__ == "__main__":
             teacher_pred = mock_teacher(synth_data)
             synthetic_labels = torch.eye(2).to(device)[torch.argmax(teacher_pred, dim=1)]
 
-
             LCE = torch.nn.CrossEntropyLoss(reduction="mean")
             CE_loss = LCE(torch.nn.functional.softmax(student_pred, dim=1), synthetic_labels)
             CE_loss_T = LCE(torch.nn.functional.softmax(teacher_pred, dim=1), synthetic_labels)

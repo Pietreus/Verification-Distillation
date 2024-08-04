@@ -86,9 +86,11 @@ def knowledge_distillation_training(distillation_dataset: Dataset, num_classes: 
                                     Optimizer=optim.Adam, device="cpu",
                                     l_CE: float = 1., l_KD: float = 1., l_GAD: float = 1.,
                                     temperature=lambda x: np.exp(-x / 100),
-                                    log_writer: SummaryWriter = Dummy_writer()):
+                                    log_writer: SummaryWriter = Dummy_writer(),
+                                    data_loader_workers: int = 0):
     """
     performs the knowledge distillation training procedure.
+    :param data_loader_workers: 
     :param distillation_dataset:
     :param num_classes:
     :param teacher_model:
@@ -105,24 +107,24 @@ def knowledge_distillation_training(distillation_dataset: Dataset, num_classes: 
     :param log_writer:
     :return: none, student model is trained in-place.
     """
-    teacher_model.to(device)
+    teacher_model.to(device, non_blocking=True)
     teacher_model.eval()
-    student_model.to(device)
+    student_model.to(device, non_blocking=True)
     optimizer = Optimizer(student_model.parameters(), lr=learn_rate)
     # Create DataLoader
     for epoch in tqdm(range(epochs), ncols=50 + epochs):
-        train_loader = DataLoader(distillation_dataset, batch_size=batch_size, shuffle=True)
+        train_loader = DataLoader(distillation_dataset, batch_size=batch_size, shuffle=True, num_workers=data_loader_workers)
 
         for batch_idx, (inputs, synthetic_labels) in enumerate(
                 train_loader):  # we deliberately ignore real labels!
             optimizer.zero_grad()
-            inputs = inputs.to(device)
+            inputs = inputs.to(device, non_blocking=True)
             # teacher_outputs = synthetic_labels.to(device)
             inputs.requires_grad = True
             # Forward pass
             outputs = student_model(inputs)
             teacher_outputs = teacher_model(inputs)
-            synthetic_labels = torch.eye(num_classes).to(device)[torch.argmax(teacher_outputs, dim=1)]
+            synthetic_labels = torch.eye(num_classes).to(device, non_blocking=True)[torch.argmax(teacher_outputs, dim=1)]
 
             loss, ce, kl, gad, grad_ratio = LGAD(inputs, synthetic_labels, outputs, teacher_outputs,
                                                  temperature=temperature(epoch), lambda_GAD=l_GAD,

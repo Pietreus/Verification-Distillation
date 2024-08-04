@@ -5,7 +5,7 @@ from torch.utils.tensorboard import SummaryWriter
 from RobustMockTeacher import MockNeuralNetwork
 from src.utils.Relu_network import FFNetwork
 from src.utils.data.datasets import SyntheticDataset
-from src.utils.knowledge_distillation import knowledge_distillation_training
+from src.utils.distillation.knowledge_distillation import knowledge_distillation_training
 
 from src.utils.metrics import robustness_disparity
 
@@ -45,11 +45,11 @@ if __name__ == "__main__":
     l_GAD = 50
     l_CE = 2
     l_KD = 5
-    epochs = 5
+    epochs = 50
 
     knowledge_distillation_training(distillation_data, 2, teacher, student,
                                     l_GAD=l_GAD, l_CE=l_CE, l_KD=l_KD, learn_rate=0.0001, epochs=epochs,
-                                    log_writer=writer)
+                                    data_loader_workers=0)
     writer.close()
     mask = high_confidence_indices(distillation_data.features, student, confidence=0.8)
     rob_disparity, student_grad = robustness_disparity(distillation_data, teacher, student)
