@@ -48,7 +48,7 @@ trainer.setup(optimizer="SGD(lr=0.1, momentum=0.9)",
               )
 trainer.fit(train_loader=train_loader,
             n_epochs=n_epochs,
-            save_path='./rob/',
+            save_path='../rob/',
             save_best={"Clean(Val)":"HBO", "PGD(Val)":"HB"},
             save_type="Epoch",
             save_overwrite=True,
@@ -56,8 +56,8 @@ trainer.fit(train_loader=train_loader,
             )
 
 # Robust orphan training.
-robust_orphan_rmodel = mair.RobModel(robust_orphan_model, n_classes=output_dim).cuda()
-robust_orphan_trainer = Standard(robust_orphan_rmodel)
+robust_orphan_rmodel = mair.RobModel(robust_orphan_model, n_classes=output_dim)#.cuda()
+robust_orphan_trainer = AT(robust_orphan_rmodel, eps=EPS, alpha=ALPHA, steps=STEPS)
 robust_orphan_trainer.record_rob(train_loader, val_loader, eps=EPS, alpha=ALPHA, steps=STEPS, std=STD)
 robust_orphan_trainer.setup(optimizer="SGD(lr=0.1, momentum=0.9)",
                      scheduler="Step(milestones=[100, 150], gamma=0.1)",
@@ -66,16 +66,16 @@ robust_orphan_trainer.setup(optimizer="SGD(lr=0.1, momentum=0.9)",
                      n_epochs=n_epochs
                      )
 robust_orphan_trainer.fit(train_loader=train_loader,
-                   n_epochs=n_epochs,
-                   save_path='./rob/',
-                   save_best={"Clean(Val)":"HBO", "PGD(Val)":"HB"},
-                   save_type="Epoch",
-                   save_overwrite=True,
-                   record_type="Epoch"
-                   )
+                          n_epochs=n_epochs,
+                          save_path='../rob/',
+                          save_best={"Clean(Val)":"HBO", "PGD(Val)":"HB"},
+                          save_type="Epoch",
+                          save_overwrite=True,
+                          record_type="Epoch"
+                          )
 
 # Orphan training.
-orphan_rmodel = mair.RobModel(orphan_model, n_classes=output_dim).cuda()
+orphan_rmodel = mair.RobModel(orphan_model, n_classes=output_dim)#.cuda()
 orphan_trainer = Standard(orphan_rmodel)
 orphan_trainer.record_rob(train_loader, val_loader, eps=EPS, alpha=ALPHA, steps=STEPS, std=STD)
 orphan_trainer.setup(optimizer="SGD(lr=0.1, momentum=0.9)",
@@ -84,9 +84,10 @@ orphan_trainer.setup(optimizer="SGD(lr=0.1, momentum=0.9)",
                      minimizer=None, # or "AWP(rho=5e-3)",
                      n_epochs=n_epochs
                      )
+
 orphan_trainer.fit(train_loader=train_loader,
                    n_epochs=n_epochs,
-                   save_path='./rob/',
+                   save_path='../rob/',
                    save_best={"Clean(Val)":"HBO", "PGD(Val)":"HB"},
                    # 'save_best': model with high PGD are chosen,
                    # while in similar cases, model with high Clean are selected.
@@ -121,31 +122,7 @@ l_KD = 5
 epochs = 100
 
 knowledge_distillation_training(noisy_dataset, num_classes=output_dim, teacher_model=teacher_model,
-                                student_model=student_model, device="cuda")
-
-# for epoch in tqdm(range(epochs)):
-#     for batch_idx, (inputs, targets) in enumerate(noisy_train_loader):
-#         # Zero the parameter gradients.
-#         optimizer.zero_grad()
-#         inputs.requires_grad = True
-#
-#         # Forward pass.
-#         outputs = student_model(inputs)
-#         teacher_outputs = teacher_model(inputs)
-#
-#         loss, ce, kl, gad, gad_perc = LGAD(inputs, targets, outputs, teacher_outputs, temperature=1,
-#                                            lambda_GAD=l_GAD, lambda_CE=l_CE, lambda_KL=l_KD, softmax=True)
-#         writer.add_scalar('Loss/Cross_Entropy', ce.item(), epoch * len(train_loader) + batch_idx)
-#         writer.add_scalar('Loss/KL_Divergence', kl.item(), epoch * len(train_loader) + batch_idx)
-#         writer.add_scalar('Loss/GradientDisparity', gad.item(), epoch * len(train_loader) + batch_idx)
-#         writer.add_scalar('Loss/GrPercDisparity', gad_perc.item(), epoch * len(train_loader) + batch_idx)
-#         writer.add_scalar('Loss/Total', loss.item(), epoch * len(train_loader) + batch_idx)
-#
-#         loss.backward()
-#         optimizer.step()
-#
-# writer.flush()
-# writer.close()
+                                student_model=student_model, device="cpu")
 
 student_rmodel = mair.RobModel(student_model, n_classes=output_dim)
 evaluate_and_print(student_rmodel, "student", eps=EPS, std=STD)

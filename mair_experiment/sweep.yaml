@@ -1,0 +1,26 @@
+method: grid
+parameters:
+  seed:
+    values: [69, 420, 666, 42]
+  lr:
+    values: [0.1,0.01,0.005,0.001]
+  momentum:
+    values: [0,0.9]
+  n_epochs:
+    values: [10,20,50]
+  batch_size:
+    values: [4,8,16]
+  data_root:
+    values: ["iris"]
+  optimization_function:
+    values: [AT,Standard]
+  EPS:
+    values: [0.1]
+  ALPHA:
+    values: [0.1]
+  STEPS:
+    values: [10]
+  STD:
+    values: [0.1]
+  layer_sizes:
+    values: [[10]]
