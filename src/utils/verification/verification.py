@@ -103,11 +103,12 @@ def verify_with_marabou_from_file(model_file_nnet: str,
             f.write(f"class2={c2}\n")
             f.write("//bounds:")
             f.write(f"{bound_string}")
+            print(f"{bound_string}")
         property_files.append(property_file)
     for property_file in tqdm(property_files):
         # run a subprocess and check if its output contains the word "unsat"
 
-        # print(f"model file: {[marabou_exec, model_file_nnet, property_file]}")
+        print(f"model file: {[marabou_exec, model_file_nnet, property_file]}")
         result = subprocess.run([marabou_exec, model_file_nnet, property_file, "--verbosity=0"], check=False,
                                 capture_output=True, text=True)
         # print(result)
@@ -142,6 +143,6 @@ def produce_bound_string(bound_list: List[float], sign: str = ">=") -> str:
 if __name__ == "__main__":
     print("Counter-Example:")
     print(
-        verify_with_marabou_from_file("../../../Global_2Safety_with_Confidence/104k_student_noise_1_CE_2_KL_5_GAD_50"
+        verify_with_marabou_from_file("../../../Global_2Safety_with_Confidence/104k_teacher_noise_1_CE_2_KL_5_GAD_50"
                                       ".nnet",
-                                      8, 3, 0.5, .5))
+                                      8, 3, 0.1, .8))

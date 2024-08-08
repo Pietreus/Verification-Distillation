@@ -7,7 +7,7 @@ from torch.utils.tensorboard import SummaryWriter
 from src.experiments.synthetic_data.simple_synth_experiment import high_confidence_indices
 from src.utils.Relu_network import FFNetwork
 from src.utils.data.datasets import CSVDataset
-from src.utils.knowledge_distillation import knowledge_distillation_training
+from src.utils.distillation.knowledge_distillation import knowledge_distillation_training
 
 from src.utils.data.nnet_exporter import dataset_nnet_exporter
 from src.utils.metrics import robustness_disparity
