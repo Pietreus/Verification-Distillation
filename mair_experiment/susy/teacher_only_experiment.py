@@ -19,7 +19,7 @@ def teacher_training():
     np.random.seed(wandb.config.seed)
     torch.random.manual_seed(wandb.config.seed)
     print(wandb.config)
-    train_loader, val_loader, test_loader = get_loaders('susy', val_split=0.0, batch_size=wandb.config.batch_size)
+    train_loader, val_loader, test_loader = get_loaders('susy', val_split=0.2, batch_size=wandb.config.batch_size)
 
     input_dim = 4
     output_dim = 3
