@@ -1,3 +1,4 @@
+import mair
 import numpy as np
 import torch
 
@@ -5,6 +6,7 @@ from torch import optim, nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+import wandb
 
 
 def LGAD(inputs: torch.Tensor,
@@ -128,12 +130,88 @@ def knowledge_distillation_training(distillation_dataset: Dataset, num_classes: 
                                                  temperature=temperature(epoch), lambda_GAD=l_GAD,
                                                  lambda_CE=l_CE, lambda_KL=l_KD)
 
-            log_writer.add_scalar("Loss/total_LGAD", loss.item(), epoch * len(train_loader) + batch_idx)
-            log_writer.add_scalar("Loss/CE", ce.item(), epoch * len(train_loader) + batch_idx)
-            log_writer.add_scalar("Loss/KL", kl.item(), epoch * len(train_loader) + batch_idx)
-            log_writer.add_scalar("Loss/GAD", gad.item(), epoch * len(train_loader) + batch_idx)
-            log_writer.add_scalar("Loss/grad_ratio", grad_ratio.item(), epoch * len(train_loader) + batch_idx)
+            log_writer.add_scalar( "Loss/total_LGAD", loss.item(), epoch * len(train_loader) + batch_idx)
+            log_writer.add_scalar( "Loss/CE", ce.item(), epoch * len(train_loader) + batch_idx)
+            log_writer.add_scalar( "Loss/KL", kl.item(), epoch * len(train_loader) + batch_idx)
+            log_writer.add_scalar( "Loss/GAD", gad.item(), epoch * len(train_loader) + batch_idx)
+            log_writer.add_scalar( "Loss/grad_ratio", grad_ratio.item(), epoch * len(train_loader) + batch_idx)
 
             loss.backward()
             optimizer.step()
     log_writer.flush()
+
+
+def knowledge_distillation_training_wandb(distillation_dataset: Dataset, num_classes: int,
+                                    teacher_model: nn.Module,
+                                    student_model: nn.Module,
+                                    val_loader: DataLoader, test_loader: DataLoader,
+                                    batch_size: int = 128, epochs: int = 100, learn_rate: float = 0.0005,
+                                    Optimizer=optim.Adam, device="cpu",
+                                    l_CE: float = 1., l_KD: float = 1., l_GAD: float = 1.,
+                                    temperature=lambda x: np.exp(-x / 100)):
+    """
+    performs the knowledge distillation training procedure.
+    :param distillation_dataset:
+    :param num_classes:
+    :param teacher_model:
+    :param student_model:
+    :param batch_size:
+    :param epochs:
+    :param learn_rate:
+    :param Optimizer:
+    :param device:
+    :param l_CE:
+    :param l_KD:
+    :param l_GAD:
+    :param temperature:
+    :return: none, student model is trained in-place.
+    """
+    teacher_model.to(device)
+    teacher_model.eval()
+    student_model.to(device)
+    optimizer = Optimizer(student_model.parameters(), lr=learn_rate)
+    # Create DataLoader
+    for epoch in tqdm(range(epochs), ncols=50 + epochs):
+        train_loader = DataLoader(distillation_dataset, batch_size=batch_size, shuffle=True)
+
+        for batch_idx, (inputs, synthetic_labels) in enumerate(
+                train_loader):  # we deliberately ignore real labels!
+            optimizer.zero_grad()
+            inputs = inputs.to(device)
+            # teacher_outputs = synthetic_labels.to(device)
+            inputs.requires_grad = True
+            # Forward pass
+            outputs = student_model(inputs)
+            teacher_outputs = teacher_model(inputs)
+            synthetic_labels = torch.eye(num_classes).to(device)[torch.argmax(teacher_outputs, dim=1)]
+
+            loss, ce, kl, gad, grad_ratio = LGAD(inputs, synthetic_labels, outputs, teacher_outputs,
+                                                 temperature=temperature(epoch), lambda_GAD=l_GAD,
+                                                 lambda_CE=l_CE, lambda_KL=l_KD)
+            loss.backward()
+            optimizer.step()
+        inputs, synthetic_labels = distillation_dataset[:]
+        inputs = inputs.to(device)
+        # teacher_outputs = synthetic_labels.to(device)
+        inputs.requires_grad = True
+        # Forward pass
+        outputs = student_model(inputs)
+        teacher_outputs = teacher_model(inputs)
+        loss, ce, kl, gad, grad_ratio = LGAD(inputs, synthetic_labels, outputs, teacher_outputs,
+                                             temperature=temperature(epoch), lambda_GAD=l_GAD,
+                                             lambda_CE=l_CE, lambda_KL=l_KD)
+        robust_student_rmodel = mair.RobModel(student_model, n_classes=num_classes)
+        wandb.log(
+            {
+             "Loss/total_LGAD": loss.item(),
+             "Loss/CE": ce.item(),
+             "Loss/KL": kl.item(),
+             "Loss/GAD": gad.item(),
+             "Loss/grad_ratio": grad_ratio.item(),
+             "val-acc": robust_student_rmodel.eval_accuracy(val_loader),
+             "val-GN-rob": robust_student_rmodel.eval_rob_accuracy_gn(val_loader, std=wandb.config.STD),
+             "val-FGSM robustness": robust_student_rmodel.eval_rob_accuracy_fgsm(val_loader, eps=wandb.config.EPS),
+             "test-acc": robust_student_rmodel.eval_accuracy(test_loader),
+             "test-GN-rob": robust_student_rmodel.eval_rob_accuracy_gn(test_loader, std=wandb.config.STD),
+             "test-FGSM robustness": robust_student_rmodel.eval_rob_accuracy_fgsm(test_loader, eps=wandb.config.EPS)})
+
