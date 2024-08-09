@@ -2,18 +2,24 @@ method: grid
 parameters:
   seed:
     values: [69, 420, 666, 42]
-  lr:
-    values: [0.1,0.01,0.001]
-  momentum:
-    values: [0,0.9]
-  n_epochs:
-    values: [20]
+  l_CE:
+    values: [1,2,5]
+  l_GAD:
+    values: [1,2,5]
+  l_KD:
+    values: [1,2,5]
+  learn_rate:
+    values: [0.001]
+  copies:
+    values: [5]
+  epochs:
+    values: [10]
   batch_size:
-    values: [128]
+    values: [1024]
   data_root:
     values: ["mnist"]
   optimization_function:
-    values: [AT,Standard]
+    values: [AT]
   EPS:
     values: [0.1]
   ALPHA:
