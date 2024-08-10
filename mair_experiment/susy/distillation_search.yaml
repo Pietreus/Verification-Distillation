@@ -1,0 +1,32 @@
+method: grid
+parameters:
+  seed:
+    values: [69, 420, 42]
+  l_CE:
+    values: [1,2,5]
+  l_GAD:
+    values: [1,2,5]
+  l_KD:
+    values: [1,2,5]
+  learn_rate:
+    values: [0.001]
+  copies:
+    values: [1]
+  epochs:
+    values: [10]
+  batch_size:
+    values: [1024]
+  data_root:
+    values: ["susy"]
+  optimization_function:
+    values: [AT]
+  EPS:
+    values: [0.1]
+  ALPHA:
+    values: [0.1]
+  STEPS:
+    values: [10]
+  STD:
+    values: [0.1]
+  layer_sizes:
+    values: [[10]]

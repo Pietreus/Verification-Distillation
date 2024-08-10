@@ -37,8 +37,8 @@ if __name__ == "__main__":
     with open("mair_experiment/susy/distillation_search.yaml", 'r') as stream:
         sweep_configuration = yaml.safe_load(stream)
     #TODO parameters for teacher + grid
-    train_loader, val_loader, test_loader = get_loaders('susy', val_split=0.2, batch_size=8)
-    teacher_model = FFNetwork(input_dim, output_dim, layer_sizes=[10, 10])
+    train_loader, val_loader, test_loader = get_loaders('susy', val_split=0.2, batch_size=65536)
+    teacher_model = FFNetwork(input_dim, output_dim, layer_sizes=[18, 10])
     rmodel = mair.RobModel(teacher_model, n_classes=output_dim)  # .cuda
     trainer = AT(rmodel, eps=.1, alpha=.1, steps=10)
     trainer.record_rob(train_loader, val_loader, eps=.1, alpha=.1, steps=10, std=0.1)
@@ -46,10 +46,10 @@ if __name__ == "__main__":
                   scheduler="Step(milestones=[100, 150], gamma=0.1)",
                   scheduler_type="Epoch",
                   minimizer=None,  # or "AWP(rho=5e-3)",
-                  n_epochs=100
+                  n_epochs=10
                   )
     trainer.fit(train_loader=train_loader,
-                n_epochs=100,
+                n_epochs=10,
                 save_path='../rob/',
                 save_best={"Clean(Val)": "HBO", "PGD(Val)": "HB"},
                 save_type="Epoch",
