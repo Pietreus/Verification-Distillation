@@ -37,7 +37,7 @@ if __name__ == "__main__":
     with open("mair_experiment/mnist/distillation_search.yaml", 'r') as stream:
         sweep_configuration = yaml.safe_load(stream)
     #TODO parameters for teacher + grid
-    train_loader, val_loader, test_loader = get_loaders('mnist', val_split=0.2, batch_size=1024)
+    train_loader, val_loader, test_loader = get_loaders('mnist', val_split=0.2, batch_size=1024, flatten=True)
     teacher_model = FFNetwork(input_dim, output_dim, layer_sizes=[10, 10])
     rmodel = mair.RobModel(teacher_model, n_classes=output_dim)  # .cuda
     trainer = AT(rmodel, eps=.1, alpha=.1, steps=10)
