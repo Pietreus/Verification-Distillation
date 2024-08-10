@@ -1,7 +1,7 @@
 method: grid
 parameters:
   seed:
-    values: [69, 420, 666, 42]
+    values: [69, 420, 42]
   l_CE:
     values: [1,2,5]
   l_GAD:

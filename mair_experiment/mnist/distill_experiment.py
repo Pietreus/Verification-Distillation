@@ -9,7 +9,7 @@ from src.utils.Relu_network import FFNetwork
 from src.utils.data.datasets import get_loaders, NoisyDataset
 from src.utils.knowledge_distillation import knowledge_distillation_training_wandb
 
-input_dim = 768
+input_dim = 784
 output_dim = 10
 
 
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     with open("mair_experiment/mnist/distillation_search.yaml", 'r') as stream:
         sweep_configuration = yaml.safe_load(stream)
     #TODO parameters for teacher + grid
-    train_loader, val_loader, test_loader = get_loaders('mnist', val_split=0.2, batch_size=8)
+    train_loader, val_loader, test_loader = get_loaders('mnist', val_split=0.2, batch_size=1024)
     teacher_model = FFNetwork(input_dim, output_dim, layer_sizes=[10, 10])
     rmodel = mair.RobModel(teacher_model, n_classes=output_dim)  # .cuda
     trainer = AT(rmodel, eps=.1, alpha=.1, steps=10)
@@ -46,10 +46,10 @@ if __name__ == "__main__":
                   scheduler="Step(milestones=[100, 150], gamma=0.1)",
                   scheduler_type="Epoch",
                   minimizer=None,  # or "AWP(rho=5e-3)",
-                  n_epochs=100
+                  n_epochs=50
                   )
     trainer.fit(train_loader=train_loader,
-                n_epochs=100,
+                n_epochs=50,
                 save_path='../rob/',
                 save_best={"Clean(Val)": "HBO", "PGD(Val)": "HB"},
                 save_type="Epoch",
