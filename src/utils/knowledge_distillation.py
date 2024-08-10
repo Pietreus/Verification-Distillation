@@ -197,6 +197,7 @@ def knowledge_distillation_training_wandb(distillation_dataset: Dataset, num_cla
         # Forward pass
         outputs = student_model(inputs)
         teacher_outputs = teacher_model(inputs)
+        synthetic_labels = torch.eye(num_classes).to(device)[torch.argmax(teacher_outputs, dim=1)]
         loss, ce, kl, gad, grad_ratio = LGAD(inputs, synthetic_labels, outputs, teacher_outputs,
                                              temperature=temperature(epoch), lambda_GAD=l_GAD,
                                              lambda_CE=l_CE, lambda_KL=l_KD)
