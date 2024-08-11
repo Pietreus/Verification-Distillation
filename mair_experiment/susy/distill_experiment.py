@@ -1,3 +1,5 @@
+import os
+
 import mair
 import numpy as np
 import torch
@@ -12,9 +14,10 @@ from src.utils.knowledge_distillation import knowledge_distillation_training_wan
 input_dim = 18
 output_dim = 2
 
+os.environ["WANDB__SERVICE_WAIT"] = "300"
 
 def distilling_search(trainer, train_loader, val_loader, test_loader):
-    wandb.init(entity="peter-blohm-tu-wien", project="garbage/susy")
+    wandb.init(entity="peter-blohm-tu-wien", project="garbage-susy")
     np.random.seed(wandb.config.seed)
     torch.random.manual_seed(wandb.config.seed)
     student_model = FFNetwork(input_dim, output_dim, layer_sizes=wandb.config.layer_sizes)
@@ -57,5 +60,5 @@ if __name__ == "__main__":
                 record_type="Epoch"
                 )
 
-    sweep_id = wandb.sweep(entity="peter-blohm-tu-wien", project="garbage/susy", sweep=sweep_configuration)
+    sweep_id = wandb.sweep(entity="peter-blohm-tu-wien", project="garbage-susy", sweep=sweep_configuration)
     wandb.agent(sweep_id, function=lambda: distilling_search(teacher_model, train_loader, val_loader, test_loader))
