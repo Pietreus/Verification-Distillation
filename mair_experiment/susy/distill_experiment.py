@@ -60,5 +60,5 @@ if __name__ == "__main__":
                 record_type="Epoch"
                 )
 
-    sweep_id = wandb.sweep(entity="peter-blohm-tu-wien", project="garbage-susy", sweep=sweep_configuration)
+    sweep_id = wandb.sweep(entity="peter-blohm-tu-wien", project="garbage-susy-distill", sweep=sweep_configuration)
     wandb.agent(sweep_id, function=lambda: distilling_search(teacher_model, train_loader, val_loader, test_loader))

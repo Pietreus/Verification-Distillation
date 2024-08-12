@@ -15,7 +15,7 @@ parameters:
   epochs:
     values: [10]
   batch_size:
-    values: [1024]
+    values: [65536]
   data_root:
     values: ["susy"]
   optimization_function:
