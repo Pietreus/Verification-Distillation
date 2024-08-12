@@ -1,15 +1,15 @@
 method: grid
 parameters:
   seed:
-    values: [69, 420, 666, 42]
+    values: [69, 420, 666]
   lr:
-    values: [0.1,0.01,0.001]
+    values: [0.01]
   momentum:
-    values: [0,0.9]
+    values: [0.9]
   n_epochs:
-    values: [100]
+    values: [20]
   batch_size:
-    values: [65536]
+    values: [1024]
   data_root:
     values: ["mnist"]
   optimization_function:

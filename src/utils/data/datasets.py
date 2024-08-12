@@ -160,6 +160,8 @@ class NoisyDataset(Dataset):
         noisy_data = []
         noisy_labels = []
         for data, label in original_dataset:
+            noisy_data.append(data)
+            noisy_labels.append(label)
             for _ in range(self.copies_per_sample):
                 noisy_data.append(self._add_noise(data))
                 noisy_labels.append(label)

@@ -77,5 +77,5 @@ if __name__ == "__main__":
     with open("mair_experiment/susy/teacher_sweep.yaml", 'r') as stream:
         sweep_configuration = yaml.safe_load(stream)
 
-    sweep_id = wandb.sweep(entity="peter-blohm-tu-wien", project="distillation-teacher", sweep=sweep_configuration)
+    sweep_id = wandb.sweep(entity="peter-blohm-tu-wien", project="garbage_susy_teacher_local", sweep=sweep_configuration)
     wandb.agent(sweep_id, function=teacher_training)

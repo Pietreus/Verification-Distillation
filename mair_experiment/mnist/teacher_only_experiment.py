@@ -75,8 +75,8 @@ def teacher_training():
 
 
 if __name__ == "__main__":
-    with open("mair_experiment/teacher_sweep.yaml", 'r') as stream:
+    with open("mair_experiment/mnist/teacher_sweep.yaml", 'r') as stream:
         sweep_configuration = yaml.safe_load(stream)
 
-    sweep_id = wandb.sweep(entity="peter-blohm-tu-wien", project="distillation-teacher", sweep=sweep_configuration)
+    sweep_id = wandb.sweep(entity="peter-blohm-tu-wien", project="mnist_teacher_only_two", sweep=sweep_configuration)
     wandb.agent(sweep_id, function=teacher_training)

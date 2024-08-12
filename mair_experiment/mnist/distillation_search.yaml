@@ -1,19 +1,19 @@
 method: grid
 parameters:
   seed:
-    values: [69, 420, 42]
+    values: [420, 69, 666, 17]
   l_CE:
-    values: [1,2,5]
+    values: [2]
   l_GAD:
-    values: [1,2,5]
+    values: [0, 2, 5]
   l_KD:
-    values: [1,2,5]
+    values: [2]
   learn_rate:
     values: [0.001]
   copies:
-    values: [5]
+    values: [20]
   epochs:
-    values: [10]
+    values: [10, 20]
   batch_size:
     values: [1024]
   data_root:

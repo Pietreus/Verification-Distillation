@@ -15,7 +15,7 @@ warnings.simplefilter("ignore")
 
 def orphan_training():
     # Set seeds.
-    wandb.init(entity="peter-blohm-tu-wien", project="test_project")
+    wandb.init(entity="peter-blohm-tu-wien", project="mnist_orphan_only_more_noise")
     np.random.seed(wandb.config.seed)
     torch.random.manual_seed(wandb.config.seed)
     print(wandb.config)
@@ -75,8 +75,8 @@ def orphan_training():
 
 
 if __name__ == "__main__":
-    with open("mair_experiment/sweep.yaml", 'r') as stream:
+    with open("mair_experiment/mnist/sweep.yaml", 'r') as stream:
         sweep_configuration = yaml.safe_load(stream)
 
-    sweep_id = wandb.sweep(entity="peter-blohm-tu-wien", project="distillation-orphans", sweep=sweep_configuration)
+    sweep_id = wandb.sweep(entity="peter-blohm-tu-wien", project="mnist_orphan_only_more_noise", sweep=sweep_configuration)
     wandb.agent(sweep_id, function=orphan_training)
