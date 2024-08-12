@@ -21,8 +21,8 @@ def teacher_training():
     print(wandb.config)
     train_loader, val_loader, test_loader = get_loaders('susy', val_split=0.2, batch_size=wandb.config.batch_size)
 
-    input_dim = 4
-    output_dim = 3
+    input_dim = 18
+    output_dim = 2
 
     orphan_model = FFNetwork(input_dim, output_dim, layer_sizes=wandb.config.layer_sizes)
 
@@ -74,7 +74,7 @@ def teacher_training():
 
 
 if __name__ == "__main__":
-    with open("mair_experiment/teacher_sweep.yaml", 'r') as stream:
+    with open("mair_experiment/susy/teacher_sweep.yaml", 'r') as stream:
         sweep_configuration = yaml.safe_load(stream)
 
     sweep_id = wandb.sweep(entity="peter-blohm-tu-wien", project="distillation-teacher", sweep=sweep_configuration)
