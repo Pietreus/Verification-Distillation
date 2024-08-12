@@ -123,8 +123,8 @@ def get_loaders(dataset_name, batch_size=32, val_split=0.2, test_split=0.2, rand
 
     elif dataset_name.lower() == 'susy': #ignores the test split, as there is a designated test set
         full_dataset = torch.tensor(np.load("./datasets/susy.npy"))
-        X, y = full_dataset[:4500000, :-1], full_dataset[:4500000, 0].long()
-        X_test, y_test = full_dataset[4500000:, :-1], full_dataset[4500000:, 0].long()
+        X, y = full_dataset[:4500000, 1:], full_dataset[:4500000, 0].long()
+        X_test, y_test = full_dataset[4500000:, 1:], full_dataset[4500000:, 0].long()
         X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=val_split,
                          random_state=random_state)
 
